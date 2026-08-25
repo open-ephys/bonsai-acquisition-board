@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <Authors>Aaron Cuevas Lopez</Authors>
+    <Copyright>Copyright © Aaron Cuevas Lopez</Copyright>
+    <PackageProjectUrl></PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile></PackageLicenseFile>
+    <PackageIcon></PackageIcon>
+  </PropertyGroup>
+</Project>
