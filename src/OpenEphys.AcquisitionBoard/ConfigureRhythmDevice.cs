@@ -103,13 +103,33 @@ namespace OpenEphys.AcquisitionBoard
         [Category(ConfigurationCategory)]
         [Description("Specifies whether the DSP offset removal filter is enabled.")]
         public bool DspEnabled { get; set; }
-        
+
+        /// <summary>
+        /// Gets or sets the buffer size.
+        /// </summary>
+        /// <remarks>
+        /// This property determines the number of samples that are collected
+        /// before data is propagated.
+        /// It is a multiple of 4 to be able to accomodate
+        /// the aux data which is sampled at fs/4.
+        /// </remarks>
+        [Description("Number of samples that are collected before data is propagated.")]
+        [Category(ConfigurationCategory)]
+        public int BufferSize
+        {
+            get => bufferSize;
+            set => bufferSize = 4 * ((value + 3) / 4);
+        }
+
+        int bufferSize = 32;
+
 
         public override IObservable<AcquisitionBoardContextTask> Process(IObservable<AcquisitionBoardContextTask> source)
         {
             RhythmBoard board = null;
             var deviceAddress = DeviceAddress;
             var deviceName = DeviceName;
+            var buffersize = BufferSize;
             return source
                 .ConfigureAndLatchDevice(context =>
                 {
@@ -124,7 +144,7 @@ namespace OpenEphys.AcquisitionBoard
                     context.Reset();
                     Console.WriteLine($"Connected streams : {board.GetNumEnabledDataStreams()}");
                     var chipIds = ScanConnectedAmplifiers(board, context, deviceAddress);
-                    var deviceInfo = new RhythmDeviceInfo(device, DeviceType, chipIds);
+                    var deviceInfo = new RhythmDeviceInfo(device, DeviceType, chipIds, buffersize);
                     return new CompositeDisposable(
                         ledSubscription,
                         DeviceManager.RegisterDevice(deviceName, deviceInfo)
@@ -501,13 +521,16 @@ namespace OpenEphys.AcquisitionBoard
 
     class RhythmDeviceInfo : DeviceInfo
     {
-        public RhythmDeviceInfo(DeviceContext device, Type deviceType, RhythmDevice.RhdChipId[] chipIds)
+        public RhythmDeviceInfo(DeviceContext device, Type deviceType, RhythmDevice.RhdChipId[] chipIds, int bufferSize)
             : base(device, deviceType)
         {
             ChipIds = chipIds;
+            BufferSize = bufferSize;
         }
 
         public RhythmDevice.RhdChipId[] ChipIds { get; }
+
+        public int BufferSize { get; }
     }
 
 

@@ -25,41 +25,11 @@ namespace OpenEphys.AcquisitionBoard
 
         IEnumerable<IDeviceConfiguration> IDeviceCollection.GetDevices() => acquisitionBoard.GetDevices();
 
-        int readSize = 512;
-
-        /// <summary>
-        /// Gets or sets the number of bytes read per cycle of the <see cref="AcquisitionBoardContextTask"/>'s acquisition
-        /// thread.
-        /// </summary>
-        /// <remarks>
-        /// <para>
-        /// This option allows control over a fundamental trade-off between closed-loop response time and
-        /// available bandwidth. A minimal value, which is determined by <see
-        /// cref="AcquisitionBoardContextTask.MaxReadFrameSize"/>, will provide the lowest response latency, so long as data
-        /// can be cleared from hardware memory fast enough to prevent buffering. Larger values will both
-        /// reduce system call frequency and reduce the number of function calls per unit time performed by
-        /// Bonsai, and therefore, increase available bandwidth. Larger values may improve processing
-        /// performance for high-bandwidth data sources. The optimal value depends on the host computer and
-        /// hardware configuration and must be determined via testing (e.g. using <see
-        /// cref="MemoryMonitorData"/>).
-        /// </para>
-        /// <para>
-        /// If a value is set that is not aligned to a 32-bit word boundary, it will be rounded up
-        /// to the next 32-bit aligned value.
-        /// </para>
-        /// </remarks>
-        [Description("Number of bytes read per cycle of the acquisition thread.")]
-        [Category(DeviceFactory.ConfigurationCategory)]
-        public int ReadSize
-        {
-            get => readSize;
-            set => readSize = (value + 3) & ~3; // NB: Round up to the next multiple of four to align with word boundaries in liboni
-        }
-
-
-        // NB : We keep this value fixed at the same
+        
+        // NB : We keep this values fixed at the same
         // value as the GUI
-        const int WriteSize = 24 * 1024;
+        const int WriteSize = 2 * 1024;
+        const int ReadSize = 24 * 1024;
 
         /// <inheritdoc cref="ConfigureAcquisitionBoard"/>
         [Description("The unique name for this Acquisition Board instance")]
@@ -148,6 +118,15 @@ namespace OpenEphys.AcquisitionBoard
         {
             get => acquisitionBoard.DspEnabled;
             set => acquisitionBoard.DspEnabled = value;
+        }
+
+        /// <inheritdoc cref="ConfigureRhythmDevice.BufferSize"/>
+        [Description("Number of samples that are collected before data is propagated.")]
+        [Category(DeviceFactory.ConfigurationCategory)]
+        public int BufferSize
+        {
+            get => acquisitionBoard.BufferSize;
+            set => acquisitionBoard.BufferSize = value;
         }
 
         /// <summary>

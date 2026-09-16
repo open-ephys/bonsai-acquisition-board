@@ -21,7 +21,7 @@ namespace OpenEphys.AcquisitionBoard
         {
         }
 
-        readonly TimeSpan detectTimeout = TimeSpan.FromSeconds(1);
+        readonly TimeSpan detectTimeout = TimeSpan.FromMilliseconds(500);
 
         /// <summary>
         /// Gets or sets the device enable state.

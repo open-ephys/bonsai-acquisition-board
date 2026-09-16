@@ -122,6 +122,15 @@ namespace OpenEphys.AcquisitionBoard
             set => rhythm.DspEnabled = value;
         }
 
+        /// <inheritdoc cref="ConfigureRhythmDevice.BufferSize"/>
+        [Description("Number of samples that are collected before data is propagated.")]
+        [Category(ConfigurationCategory)]
+        public int BufferSize
+        {
+            get => rhythm.BufferSize;
+            set => rhythm.BufferSize = value;
+        }
+
         public ConfigureAcquisitionBoard() : base()
         {
             heartbeat.DeviceAddress = 0;

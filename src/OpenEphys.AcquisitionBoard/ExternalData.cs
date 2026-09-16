@@ -24,24 +24,15 @@ namespace OpenEphys.AcquisitionBoard
         [Description("The name of the acquisition board device to acquire data from.")]
         public string DeviceName { get; set; }
 
-        /// <summary>
-        /// Gets or sets the buffer size.
-        /// </summary>
-        /// <remarks>
-        /// This property determines the number of samples that are collected
-        /// before data is propagated.
-        /// </remarks>
-        [Description("Number of samples that are collected before data is propagated.")]
-        public int BufferSize { get; set; } = 32;
         public override IObservable<ExternalDataFrame> Generate()
         {
-            var bufferSize = BufferSize;
             return DeviceManager.GetDevice(DeviceName).SelectMany(
                 deviceInfo =>
                 {
                     var rhythmInfo = (RhythmDeviceInfo)deviceInfo;
                     var chipIds = rhythmInfo.ChipIds;
                     var frameData = rhythmInfo.Context.GetDeviceFrames(rhythmInfo.DeviceAddress);
+                    var bufferSize = rhythmInfo.BufferSize;
                     return Observable.Create<ExternalDataFrame>(observer =>
                     {
                         int activeStreams = 0;

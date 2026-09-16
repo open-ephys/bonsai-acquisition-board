@@ -8,8 +8,9 @@ using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Bonsai;
-using OpenEphys.Onix1;
+using Bonsai.Reactive;
 using OpenCV.Net;
+using OpenEphys.Onix1;
 
 namespace OpenEphys.AcquisitionBoard
 {
@@ -30,27 +31,8 @@ namespace OpenEphys.AcquisitionBoard
         [Description("The headstage port or ports to acquire data from.")]
         public HeadstagePort Port { get; set; } = HeadstagePort.AllConnected;
 
-        /// <summary>
-        /// Gets or sets the buffer size.
-        /// </summary>
-        /// <remarks>
-        /// This property determines the number of samples that are collected
-        /// before data is propagated.
-        /// It is a multiple of 4 to be able to accomodate
-        /// the aux data which is sampled at fs/4.
-        /// </remarks>
-        [Description("Number of samples that are collected before data is propagated.")]
-        public int BufferSize
-        {
-            get => bufferSize;
-            set => bufferSize = 4*((value+3)/4);
-        }
-
-        int bufferSize = 32;
         public override IObservable<HeadstageDataFrame> Generate()
         {
-            var amplifierBufferSize = bufferSize;
-            var auxBufferSize = bufferSize/4;
             return DeviceManager.GetDevice(DeviceName).SelectMany(
                 deviceInfo =>
                 {
@@ -58,6 +40,8 @@ namespace OpenEphys.AcquisitionBoard
                     var rhythmInfo = (RhythmDeviceInfo)deviceInfo;
                     var chipIds = rhythmInfo.ChipIds;
                     var frameData = rhythmInfo.Context.GetDeviceFrames(rhythmInfo.DeviceAddress);
+                    var amplifierBufferSize = rhythmInfo.BufferSize;
+                    var auxBufferSize = rhythmInfo.BufferSize / 4;
                     return Observable.Create<HeadstageDataFrame>(observer =>
                     {
 
