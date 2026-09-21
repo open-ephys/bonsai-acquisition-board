@@ -37,6 +37,8 @@ namespace OpenEphys.AcquisitionBoard
         });
         readonly ConfigureRhythmDevice rhythm = new();
 
+        readonly ConfigureMemoryMonitor memoryMonitor = new();
+
         /// <inheritdoc cref="ConfigureRhythmDevice.BoardLeds"/>
         [Category(DeviceFactory.AcquisitionCategory)]
         [Description("Board LED status")]
@@ -126,6 +128,9 @@ namespace OpenEphys.AcquisitionBoard
             set => rhythm.BufferSize = value;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConfigureAcquisitionBoard"/> class.
+        /// </summary>
         public ConfigureAcquisitionBoard() : base()
         {
             heartbeat.DeviceAddress = 0;
@@ -134,6 +139,8 @@ namespace OpenEphys.AcquisitionBoard
                 bnoArray[i].DeviceAddress = (uint)(BNO_BASE_ADDR + i * 2);
             }
             rhythm.DeviceAddress = RHYTHM_ADDR;
+            memoryMonitor.DeviceAddress = MEM_USAGE_ADDR;
+            memoryMonitor.Enable = true;
         }
 
         internal override void UpdateDeviceNames()
@@ -173,6 +180,7 @@ namespace OpenEphys.AcquisitionBoard
                 yield return bnoArray[i];
             }
             yield return rhythm;
+            yield return memoryMonitor;
         }
 
         public override IObservable<TContext> Process<TContext>(IObservable<TContext> source)
