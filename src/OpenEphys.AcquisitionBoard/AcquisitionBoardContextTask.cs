@@ -1,10 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using oni;
-using OpenEphys.Onix1;
 
 namespace OpenEphys.AcquisitionBoard
 {
@@ -22,7 +16,7 @@ namespace OpenEphys.AcquisitionBoard
         protected override void ContextCreationChecks()
         {
             var (major, _, _) = GetSemverComponents(GetHub(0).FirmwareVersion);
-            if (major!= 2)
+            if (major != 2)
             {
                 throw new NotSupportedException("This library requires version 2.x.x of the Acquisition Board Gateware. "
                     + "Please perform a gateware update to use this library. Instructions can be found at "
@@ -32,7 +26,7 @@ namespace OpenEphys.AcquisitionBoard
 
         internal TemporaryAcquisitionScope StartTemporaryAcquisition()
         {
-            AssertConfigurationContext(); 
+            AssertConfigurationContext();
             return new TemporaryAcquisitionScope(this);
         }
 
@@ -50,7 +44,7 @@ namespace OpenEphys.AcquisitionBoard
             internal TemporaryAcquisitionScope(AcquisitionBoardContextTask parent)
             {
                 this.context = parent;
-                context.ctx.Start(true); 
+                context.ctx.Start(true);
             }
 
             internal TemporaryAcquisitionScope(AcquisitionBoardContextTask parent, int blockReadSize)
@@ -59,7 +53,7 @@ namespace OpenEphys.AcquisitionBoard
                 this.originalReadsize = context.ctx.BlockReadSize;
                 context.ctx.BlockReadSize = blockReadSize;
                 context.ctx.Start(true);
-                
+
             }
 
             public void DiscardFrames(int count)

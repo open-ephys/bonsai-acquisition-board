@@ -1,14 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data.SqlTypes;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Bonsai;
-using Bonsai.Reactive;
 using OpenCV.Net;
 using OpenEphys.Onix1;
 
@@ -107,7 +102,7 @@ namespace OpenEphys.AcquisitionBoard
                                 if (isPortSelected)
                                 {
                                     // NB : Only AuxCmd2
-                                    auxOffsets[auxIndex++] = totalStreams + currentStream ;
+                                    auxOffsets[auxIndex++] = totalStreams + currentStream;
                                     for (int s = 0; s < numStreams; s++)
                                     {
                                         for (int c = 0; c < streamChannels; c++)
@@ -136,12 +131,12 @@ namespace OpenEphys.AcquisitionBoard
                                 sampleCountBuffer[sampleIndex] = payload->SampleCount;
 
                                 var frameData = (ushort*)((byte*)payload + sizeof(RhythmPayload));
-                                var auxCmd = ((payload->SampleCount+3)%4);
+                                var auxCmd = ((payload->SampleCount + 3) % 4);
                                 if (auxCmd != 3)
                                 {
                                     for (int i = 0; i < totalAuxIndexes; i++)
                                     {
-                                        auxBuffer[i*3+auxCmd, sampleIndex/4] = frameData[auxOffsets[i]];
+                                        auxBuffer[i * 3 + auxCmd, sampleIndex / 4] = frameData[auxOffsets[i]];
                                     }
                                 }
                                 for (int i = 0; i < totalAmplifierRows; i++)
@@ -149,7 +144,7 @@ namespace OpenEphys.AcquisitionBoard
                                     amplifierBuffer[i, sampleIndex] = frameData[amplifierOffsets[i]];
                                 }
                             }
-                            if(++sampleIndex >= amplifierBufferSize)
+                            if (++sampleIndex >= amplifierBufferSize)
                             {
                                 var amplifierData = Mat.FromArray(amplifierBuffer);
                                 var auxData = Mat.FromArray(auxBuffer);
@@ -159,7 +154,7 @@ namespace OpenEphys.AcquisitionBoard
                                 auxBuffer = new ushort[totalAuxRows, auxBufferSize];
                                 amplifierBuffer = new ushort[totalAmplifierRows, amplifierBufferSize];
                                 clockBuffer = new ulong[amplifierBufferSize];
-                                sampleCountBuffer = new uint [amplifierBufferSize];
+                                sampleCountBuffer = new uint[amplifierBufferSize];
                                 hubClockBuffer = new ulong[amplifierBufferSize];
                                 sampleIndex = 0;
                             }
@@ -266,6 +261,6 @@ namespace OpenEphys.AcquisitionBoard
         /// <summary>
         /// Indicates that all connected headstage ports are selected.
         /// </summary>
-        AllConnected = 1 <<16
+        AllConnected = 1 << 16
     }
 }

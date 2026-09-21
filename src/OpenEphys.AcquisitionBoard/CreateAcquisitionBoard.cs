@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Xml.Serialization;
 using Bonsai;
-using Bonsai.IO;
 using Bonsai.Reactive;
 using OpenEphys.Onix1;
 using Rhythm.Net;
@@ -25,7 +24,7 @@ namespace OpenEphys.AcquisitionBoard
 
         IEnumerable<IDeviceConfiguration> IDeviceCollection.GetDevices() => acquisitionBoard.GetDevices();
 
-        
+
         // NB : We keep this values fixed at the same
         // value as the GUI
         const int WriteSize = 2 * 1024;

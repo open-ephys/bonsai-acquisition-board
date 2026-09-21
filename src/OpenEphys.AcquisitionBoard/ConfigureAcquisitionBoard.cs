@@ -2,16 +2,11 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics.PerformanceData;
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Bonsai;
-using oni;
 using OpenEphys.Onix1;
 using Rhythm.Net;
 
@@ -19,8 +14,8 @@ namespace OpenEphys.AcquisitionBoard
 {
     internal class ConfigureAcquisitionBoard : Onix1.MultiDeviceFactory
     {
-        
-        
+
+
 
         const uint HEARTBEAT_ADDRESS = 0;
         const uint MEM_USAGE_ADDR = 1;
@@ -171,7 +166,7 @@ namespace OpenEphys.AcquisitionBoard
         }
 
         internal override IEnumerable<IDeviceConfiguration> GetDevices()
-        { 
+        {
             yield return heartbeat;
             for (int i = 0; i < bnoArray.Count; i++)
             {
@@ -191,13 +186,14 @@ namespace OpenEphys.AcquisitionBoard
                 }
                 GatewareVersion = CreateGatewareVersionString(version);
                 Console.WriteLine("Init i2c");
-                SetI2cMode(context, Enumerable.Repeat(true,bnoArray.Count).ToArray());
+                SetI2cMode(context, Enumerable.Repeat(true, bnoArray.Count).ToArray());
                 context.Reset();
                 return Disposable.Empty;
 
-            })).ConfigureAndLatchController(context => {
+            })).ConfigureAndLatchController(context =>
+            {
                 bool[] bnoEnable = new bool[bnoArray.Count];
-                for (int i = 0;i < bnoEnable.Length;i++)
+                for (int i = 0; i < bnoEnable.Length; i++)
                 {
                     bnoEnable[i] = bnoArray[i].IsConnected;
                 }

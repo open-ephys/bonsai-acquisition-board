@@ -1,13 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Subjects;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Xml.Serialization;
 using Bonsai;
 using OpenEphys.Onix1;
 using Rhythm.Net;
@@ -436,8 +431,8 @@ namespace OpenEphys.AcquisitionBoard
                 RhythmDevice.RhdChipId chipId = (RhythmDevice.RhdChipId)data[stream, 2, 19]; // chip ID (Register 63)
                 if (chipId == RhythmDevice.RhdChipId.Rhd2164)
                 {
-                    var register59ValueA = data[stream, 2, 23]; 
-                    var register59ValueB = data[stream + RhythmBoard.MAX_DATA_STREAMS/2, 2, 28];
+                    var register59ValueA = data[stream, 2, 23];
+                    var register59ValueB = data[stream + RhythmBoard.MAX_DATA_STREAMS / 2, 2, 28];
                     if (register59ValueA != RhythmDevice.REGISTER_59_MISO_A && register59ValueB != RhythmDevice.REGISTER_59_MISO_B)
                     {
                         return RhythmDevice.RhdChipId.None; // Invalid MISO configuration for RHD2164

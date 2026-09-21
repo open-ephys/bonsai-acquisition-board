@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using OpenEphys.Onix1;
 
 namespace OpenEphys.AcquisitionBoard
@@ -12,7 +8,7 @@ namespace OpenEphys.AcquisitionBoard
     {
         public ConfigureTTLOut()
             : base(typeof(TTLOut))
-        {           
+        {
         }
 
         /// <summary>

@@ -1,15 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Bonsai;
-using Bonsai.Reactive;
-using OpenEphys.Onix1;
 using OpenCV.Net;
+using OpenEphys.Onix1;
 
 namespace OpenEphys.AcquisitionBoard
 {
@@ -82,7 +78,7 @@ namespace OpenEphys.AcquisitionBoard
                                 sampleCountBuffer = new uint[bufferSize];
                                 sampleIndex = 0;
                             }
-                            
+
                         }, observer.OnError, observer.OnCompleted);
                         return frameData.Subscribe(frameObserver);
                     });

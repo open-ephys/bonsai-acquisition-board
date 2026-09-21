@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using OpenEphys.Onix1;
 using Rhythm.Net;
 
@@ -259,7 +256,7 @@ namespace OpenEphys.AcquisitionBoard
                     throw new ArgumentException("Unsupported amplifier sampling rate.", "newSampleRate");
             }
             uint val = ((divider & 0xF) << 3) + ((clockSel & 0x3) << 1) + (divEn & 0x1);
-            device.Context.WriteRegister(RHYTHM_HUB_MANAGER,HUB_CLOCK_SEL, val);
+            device.Context.WriteRegister(RHYTHM_HUB_MANAGER, HUB_CLOCK_SEL, val);
             do
             {
                 val = device.Context.ReadRegister(RHYTHM_HUB_MANAGER, HUB_CLOCK_BUSY);

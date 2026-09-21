@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reactive.Linq;
-using System.Runtime.Remoting.Messaging;
-using System.Text;
-using System.Threading.Tasks;
 using Bonsai;
 using OpenEphys.Onix1;
 
@@ -34,7 +30,7 @@ namespace OpenEphys.AcquisitionBoard
             return DeviceManager.GetDevice(DeviceName).SelectMany(deviceInfo =>
             {
                 var device = deviceInfo.GetDeviceContext(typeof(TTLOut));
-                return source.Do(value => device.Write((uint)value));   
+                return source.Do(value => device.Write((uint)value));
             });
         }
     }

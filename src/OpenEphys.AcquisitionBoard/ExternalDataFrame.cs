@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using OpenCV.Net;
+﻿using OpenCV.Net;
 using OpenEphys.Onix1;
 
 namespace OpenEphys.AcquisitionBoard
