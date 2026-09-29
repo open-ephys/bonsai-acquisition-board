@@ -69,7 +69,6 @@ namespace OpenEphys.AcquisitionBoard
             public void ProcessNextFrame(Action<oni.Frame> action)
             {
                 if (disposed) throw new ObjectDisposedException(nameof(TemporaryAcquisitionScope));
-
                 using (var frame = context.ReadFrame())
                 {
                     action(frame);

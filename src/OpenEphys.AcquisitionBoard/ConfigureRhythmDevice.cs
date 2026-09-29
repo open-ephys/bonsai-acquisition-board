@@ -17,7 +17,7 @@ namespace OpenEphys.AcquisitionBoard
         }
         const uint initLen = 64;
 
-
+        const int ReadSize = 24 * 1024;
 
         BehaviorSubject<bool> boardLed = new(true);
 
@@ -57,7 +57,7 @@ namespace OpenEphys.AcquisitionBoard
         /// <value>A <see cref="AmplifierSampleRate"/> value defining the sampling frequency.</value>
         [Category(ConfigurationCategory)]
         [Description("The per-channel sampling rate.")]
-        public AmplifierSampleRate SampleRate { get; set; }
+        public AmplifierSampleRate SampleRate { get; set; } = AmplifierSampleRate.SampleRate30000Hz;
 
         /// <summary>
         /// Gets or sets a value indicating whether external fast settle mode is enabled on channel 0.
@@ -304,7 +304,7 @@ namespace OpenEphys.AcquisitionBoard
                 const int adcChannels = 35;
                 ushort[,,] data = new ushort[RhythmBoard.MAX_DATA_STREAMS, adcChannels, initLen];
                 // Run SPI command sequence
-                using (var acquisitionScope = context.StartTemporaryAcquisition())
+                using (var acquisitionScope = context.StartTemporaryAcquisition(ReadSize))
                 {
                     for (int frameIndex = 0; frameIndex < initLen; frameIndex++)
                     {
