@@ -24,6 +24,11 @@ namespace OpenEphys.AcquisitionBoard
         const uint CONTROL_ADDR = 254u;
 
         const uint RHYTHM_ADDR = 0x0101;
+
+        const uint TTLOUT_ADDR = 0x0102;
+        const uint ANALOGOUT_ADDR = 0x0103;
+
+        const uint HARP_ADDR = 0x0104;
         const uint ENABLE_I2C_REG = 0x00001001;
 
         readonly ConfigureHeartbeat heartbeat = new();
@@ -36,6 +41,11 @@ namespace OpenEphys.AcquisitionBoard
             new SPIHeadstageI2CDevices()
         });
         readonly ConfigureRhythmDevice rhythm = new();
+
+        readonly ConfigureAnalogOutput analogOutput = new();
+        readonly ConfigureTTLOut ttlOutput = new();
+
+        readonly ConfigureHarpRhythm harpRhythm = new();
 
         readonly ConfigureMemoryMonitor memoryMonitor = new();
 
@@ -127,6 +137,14 @@ namespace OpenEphys.AcquisitionBoard
             get => rhythm.BufferSize;
             set => rhythm.BufferSize = value;
         }
+        /// <inheritdoc cref="ConfigureTTLOut.ImediateMode"/>
+        [Category(ConfigurationCategory)]
+        [Description("Specifies whether the TTL output is set immediately or synchronized with the acquisition board sample rate.")]
+        public bool TTLImediateMode
+        {
+            get => ttlOutput.ImediateMode;
+            set => ttlOutput.ImediateMode = value;
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConfigureAcquisitionBoard"/> class.
@@ -141,6 +159,10 @@ namespace OpenEphys.AcquisitionBoard
             rhythm.DeviceAddress = RHYTHM_ADDR;
             memoryMonitor.DeviceAddress = MEM_USAGE_ADDR;
             memoryMonitor.Enable = true;
+            ttlOutput.DeviceAddress = TTLOUT_ADDR;
+            analogOutput.DeviceAddress = ANALOGOUT_ADDR;
+            harpRhythm.DeviceAddress = HARP_ADDR;
+            harpRhythm.Enable = true;
         }
 
         internal override void UpdateDeviceNames()
@@ -181,6 +203,9 @@ namespace OpenEphys.AcquisitionBoard
             }
             yield return rhythm;
             yield return memoryMonitor;
+            yield return ttlOutput;
+            yield return analogOutput;
+            yield return harpRhythm;
         }
 
         public override IObservable<TContext> Process<TContext>(IObservable<TContext> source)

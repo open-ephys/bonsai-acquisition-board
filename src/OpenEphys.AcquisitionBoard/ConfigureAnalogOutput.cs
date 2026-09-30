@@ -12,18 +12,22 @@ namespace OpenEphys.AcquisitionBoard
 
         public override IObservable<TContext> Process<TContext>(IObservable<TContext> source)
         {
-            throw new NotImplementedException();
+            var deviceName = DeviceName;
+            var deviceAddress = DeviceAddress;
+            return source.ConfigureAndLatchDevice(context =>
+            {
+                var device = context.GetDeviceContext(deviceAddress, DeviceType);
+                return DeviceManager.RegisterDevice(deviceName, device, DeviceType);
+            });
         }
     }
 
     static class AnalogOut
     {
-        public const int ID = 0x10002;
+        public const int ID = 0x10003;
         public const uint MinimumVersion = 1;
 
         public const uint NULLPARAM = 0;
-
-        public const uint MODE = 1;
 
         public const int ChannelCount = 16;
 

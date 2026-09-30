@@ -7,6 +7,7 @@ namespace OpenEphys.AcquisitionBoard
     /// <summary>
     /// Represents a data frame produced by an acquisition board headstage collection.
     /// </summary>
+    [ExpectedSampleRate(30000)]
     public class HeadstageDataFrame : BufferedDataFrame
     {
         /// <summary>

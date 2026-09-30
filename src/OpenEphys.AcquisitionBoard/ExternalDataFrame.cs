@@ -6,6 +6,7 @@ namespace OpenEphys.AcquisitionBoard
     /// <summary>
     /// Represents a data frame produced by an acquisition board external data collection.
     /// </summary>
+    [ExpectedSampleRate(30000)]
     public class ExternalDataFrame : BufferedDataFrame
     {
         /// <summary>
