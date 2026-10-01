@@ -20,6 +20,7 @@ namespace OpenEphys.AcquisitionBoard
         const int ReadSize = 24 * 1024;
 
         BehaviorSubject<bool> boardLed = new(true);
+        BehaviorSubject<uint> clockDivider = new(0);
 
         /// <summary>
         /// Gets or sets a value indicating the state of the on-board LEDs.
@@ -36,6 +37,29 @@ namespace OpenEphys.AcquisitionBoard
             set
             {
                 boardLed.OnNext(value);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the clock divider for the sampel clock output
+        /// of the acquisition board
+        /// </summary>
+        [Category(AcquisitionCategory)]
+        [Description("Clock divider for the sample clock output of the acquisition board.")]
+        [Range(1, 65535)]
+        public uint ClockDivider
+        {
+            get
+            {
+                return clockDivider.Value + 1;
+            }
+            set
+            {
+                if (value < 1)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), "ClockDivider must be >= 1.");
+                }
+                clockDivider.OnNext(value - 1);
             }
         }
 
@@ -116,6 +140,8 @@ namespace OpenEphys.AcquisitionBoard
             set => bufferSize = 4 * ((value + 3) / 4);
         }
 
+
+
         int bufferSize = 32;
 
 
@@ -132,6 +158,7 @@ namespace OpenEphys.AcquisitionBoard
                     board = new RhythmBoard(device);
                     board.Initialize();
                     var ledSubscription = boardLed.Subscribe(value => board.SetBoardLeds(value));
+                    var dividerSubscription = clockDivider.Subscribe(value => board.SetClockDivider(value));
                     UploadCommonCommands(board);
                     ChangeSampleRate(board);
                     // NB : We need the reset so the initialization commands
@@ -142,6 +169,7 @@ namespace OpenEphys.AcquisitionBoard
                     var deviceInfo = new RhythmDeviceInfo(device, DeviceType, chipIds, buffersize);
                     return new CompositeDisposable(
                         ledSubscription,
+                        dividerSubscription,
                         DeviceManager.RegisterDevice(deviceName, deviceInfo)
                         );
                 }).ConfigureDirectDevice(context =>

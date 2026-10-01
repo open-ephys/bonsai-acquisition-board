@@ -124,6 +124,7 @@ namespace OpenEphys.AcquisitionBoard
             SetAudioNoiseSuppress(0);
 
             SetTtlMode(0);
+            SetClockDivider(0);
 
             SetDacThreshold(0, 32768, true);
             SetDacThreshold(1, 32768, true);
@@ -155,6 +156,18 @@ namespace OpenEphys.AcquisitionBoard
         {
             uint val = enable ? (uint)(1 << (int)RhythmMode.LED_ENABLE) : 0;
             WriteRegMask((uint)RhythmDevice.MODE, val, (1 << (int)RhythmMode.LED_ENABLE));
+        }
+
+        /// <summary>
+        /// Sets the clock divider for the SYNC_CLKOUT output of the acquisition board.
+        /// </summary>
+        /// <param name="divider">The clock divider value.</param>
+        /// <remarks>
+        /// A value of 0 corresponds to a divide-by-1 (no division), a value of 1 corresponds to a divide-by-2, and so on.
+        /// </remarks>
+        public void SetClockDivider(uint divider)
+        {
+            device.WriteRegister((uint)RhythmDevice.SYNC_CLKOUT_DIVIDE, divider);
         }
 
         /// <summary>

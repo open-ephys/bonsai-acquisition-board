@@ -58,6 +58,16 @@ namespace OpenEphys.AcquisitionBoard
             set => rhythm.BoardLeds = value;
         }
 
+        /// <inheritdoc cref="ConfigureRhythmDevice.ClockDivider"/>
+        [Category(DeviceFactory.AcquisitionCategory)]
+        [Description("Clock divider for the sample clock output of the acquisition board.")]
+        [Range(1, 65535)]
+        public uint ClockDivider
+        {
+            get => rhythm.ClockDivider;
+            set => rhythm.ClockDivider = value;
+        }
+
         /// <inheritdoc cref="ConfigureRhythmDevice.BoardIndex"/>
         [Category(DeviceFactory.ConfigurationCategory)]
         [Range(-1, 100)]
