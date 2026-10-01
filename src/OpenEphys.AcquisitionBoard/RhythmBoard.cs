@@ -123,7 +123,7 @@ namespace OpenEphys.AcquisitionBoard
             SetDacGain(0);
             SetAudioNoiseSuppress(0);
 
-            SetTtlMode(1);          // Digital outputs 0-7 are DAC comparators; 8-15 under manual control
+            SetTtlMode(0);
 
             SetDacThreshold(0, 32768, true);
             SetDacThreshold(1, 32768, true);
