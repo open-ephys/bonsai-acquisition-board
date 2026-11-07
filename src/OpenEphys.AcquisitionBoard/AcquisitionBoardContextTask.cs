@@ -2,18 +2,32 @@
 
 namespace OpenEphys.AcquisitionBoard
 {
+    /// <summary>
+    /// Encapsulates a single ONI context for an Open Ephys Acquisition Board and orchestrates interaction
+    /// with its hardware.
+    /// </summary>
+    /// <remarks>
+    /// The Acquisition Board is built on top of the <see href="https://open-ephys.github.io/ONI/">Open Neuro
+    /// Interface (ONI)</see> specification, which requires a host application to hold a "context" containing
+    /// handles for hardware communication, data acquisition parameters, etc. <see
+    /// cref="AcquisitionBoardContextTask"/> fulfills this role for the Acquisition Board, which always
+    /// communicates with the host computer through the "ft600" USB device driver. Instances of this class are
+    /// created using the <see cref="CreateContext"/> operator, and data acquisition is started using the
+    /// <see cref="Onix1.StartAcquisition"/> operator.
+    /// <para>
+    /// This library requires version 2.x.x of the Acquisition Board gateware. Instructions for updating the
+    /// gateware can be found in the <see
+    /// href="https://open-ephys.github.io/acq-board-docs/User-Manual/Gateware-Update.html">Acquisition Board
+    /// documentation</see>.
+    /// </para>
+    /// </remarks>
     public class AcquisitionBoardContextTask : Onix1.ContextTask
     {
-        const string Driver = "ft600";
-        internal AcquisitionBoardContextTask(int index) : base(Driver, index) { }
+        internal const string Driver = "ft600";
+        internal const int DefaultIndex = -1;
 
-        static (byte major, byte minor, byte patch) GetSemverComponents(uint version)
-        {
-            return (major: (byte)((version >> 16) & 0xFF), minor: (byte)((version >> 8) & 0xFF), patch: (byte)(version & 0xFF));
-        }
-
-        /// <inheritdoc/>
-        protected override void ContextCreationChecks()
+        internal AcquisitionBoardContextTask(int index, Onix1.ValidationLevel validationLevel = Onix1.ValidationLevel.Normal)
+            : base(Driver, index, validationLevel)
         {
             var (major, _, _) = GetSemverComponents(GetHub(0).FirmwareVersion);
             if (major != 2)
@@ -24,89 +38,10 @@ namespace OpenEphys.AcquisitionBoard
             }
         }
 
-        internal TemporaryAcquisitionScope StartTemporaryAcquisition()
+        static (byte major, byte minor, byte patch) GetSemverComponents(uint version)
         {
-            AssertConfigurationContext();
-            return new TemporaryAcquisitionScope(this);
+            return (major: (byte)((version >> 16) & 0xFF), minor: (byte)((version >> 8) & 0xFF), patch: (byte)(version & 0xFF));
         }
-
-        internal TemporaryAcquisitionScope StartTemporaryAcquisition(int blockReadSize)
-        {
-            AssertConfigurationContext();
-            return new TemporaryAcquisitionScope(this, blockReadSize);
-        }
-
-        internal sealed class TemporaryAcquisitionScope : IDisposable
-        {
-            readonly AcquisitionBoardContextTask context;
-            readonly int? originalReadsize;
-            bool disposed;
-            internal TemporaryAcquisitionScope(AcquisitionBoardContextTask parent)
-            {
-                this.context = parent;
-                context.ctx.Start(true);
-            }
-
-            internal TemporaryAcquisitionScope(AcquisitionBoardContextTask parent, int blockReadSize)
-            {
-                this.context = parent;
-                this.originalReadsize = context.ctx.BlockReadSize;
-                context.ctx.BlockReadSize = blockReadSize;
-                context.ctx.Start(true);
-
-            }
-
-            public void DiscardFrames(int count)
-            {
-                if (disposed) throw new ObjectDisposedException(nameof(TemporaryAcquisitionScope));
-
-                for (int i = 0; i < count; i++)
-                {
-                    using (context.ReadFrame()) { }
-                }
-            }
-
-            public void ProcessNextFrame(Action<oni.Frame> action)
-            {
-                if (disposed) throw new ObjectDisposedException(nameof(TemporaryAcquisitionScope));
-                using (var frame = context.ReadFrame())
-                {
-                    action(frame);
-                }
-            }
-
-            public void ProcessNextFrame(Action<oni.Frame> action, uint deviceAddress)
-            {
-                bool found = false;
-
-                do
-                {
-                    ProcessNextFrame(frame =>
-                    {
-                        if (frame.DeviceAddress == deviceAddress)
-                        {
-                            action(frame);
-                            found = true;
-                        }
-                    });
-                } while (!found);
-            }
-
-            public void Dispose()
-            {
-                if (!disposed)
-                {
-                    context.ctx.Stop();
-                    if (originalReadsize.HasValue)
-                    {
-                        context.ctx.BlockReadSize = originalReadsize.Value;
-                    }
-                    disposed = true;
-                }
-            }
-
-        }
-
 
     }
 }

@@ -4,12 +4,17 @@ using OpenEphys.Onix1;
 namespace OpenEphys.AcquisitionBoard
 {
     /// <summary>
-    /// Contains the rhythm frame counter whenever a Harp second counter
-    /// is produced
+    /// A Harp clock synchronization signal and the corresponding Rhythm device sample count.
     /// </summary>
     [ExpectedSampleRate(1)]
     public class HarpRhythmDataFrame : DataFrame
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HarpRhythmDataFrame"/> class.
+        /// </summary>
+        /// <param name="frame">
+        /// A frame produced by the Harp synchronization device of an acquisition board.
+        /// </param>
         public unsafe HarpRhythmDataFrame(oni.Frame frame)
             : base(frame.Clock)
         {
@@ -20,12 +25,16 @@ namespace OpenEphys.AcquisitionBoard
         }
 
         /// <summary>
-        /// Gets the Rhythm sample count corresponding to the Harp second counter.
+        /// Gets the Rhythm device sample count at the moment <see cref="HarpSecondCounter"/> was received.
         /// </summary>
+        /// <remarks>
+        /// This value can be matched against the <c>SampleCount</c> of a <see cref="HeadstageDataFrame"/> or
+        /// <see cref="ExternalDataFrame"/> to align acquisition board data with Harp time.
+        /// </remarks>
         public uint RhythmSampleCount { get; }
 
         /// <summary>
-        /// Gets the produced Harp second counter
+        /// Gets the Harp time, in whole seconds, received from the Harp clock synchronization signal.
         /// </summary>
         public uint HarpSecondCounter { get; }
     }

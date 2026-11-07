@@ -4,27 +4,47 @@ using OpenEphys.Onix1;
 
 namespace OpenEphys.AcquisitionBoard
 {
-    internal class ConfigureTTLOut : SingleDeviceFactory
+    /// <summary>
+    /// Configures the TTL output device of the acquisition board.
+    /// </summary>
+    /// <remarks>
+    /// This configuration operator can be linked to a data IO operator, such as <see cref="TTLOutput"/>,
+    /// using a shared <c>DeviceName</c>.
+    /// </remarks>
+    [Description("Configures the TTL output device of the acquisition board.")]
+    public class ConfigureTTLOut : SingleDeviceFactory<AcquisitionBoardContextTask>
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConfigureTTLOut"/> class.
+        /// </summary>
         public ConfigureTTLOut()
             : base(typeof(TTLOut))
         {
         }
 
         /// <summary>
-        /// Gets or sets the output mode for TTL output.
+        /// Gets or sets a value specifying whether TTL outputs are updated immediately.
         /// </summary>
-        ///<remarks>
-        /// If set to true, the TTL output will be set immediately when the value is received.
-        /// If set to false, the TTL output will be synchronized with the acquisition board sample rate
-        ///</remarks>
+        /// <remarks>
+        /// If set to true, the TTL output pins are updated as soon as a new value is received. If set to
+        /// false, updates are synchronized with the acquisition board sample clock.
+        /// </remarks>
         [Category(ConfigurationCategory)]
         [Description("Specifies whether the TTL output is set immediately or synchronized with the acquisition board sample rate.")]
-        public bool ImediateMode { get; set; } = false;
+        public bool ImmediateMode { get; set; } = false;
 
-        public override IObservable<TContext> Process<TContext>(IObservable<TContext> source)
+        /// <summary>
+        /// Configures the TTL output device.
+        /// </summary>
+        /// <remarks>
+        /// This will schedule configuration actions to be applied by a <see cref="StartAcquisition"/> instance
+        /// prior to data acquisition.
+        /// </remarks>
+        /// <param name="source">A sequence of <see cref="AcquisitionBoardContextTask"/> instances that holds configuration actions.</param>
+        /// <returns>The original sequence modified by adding additional configuration actions required to configure the TTL output device.</returns>
+        public override IObservable<AcquisitionBoardContextTask> Process(IObservable<AcquisitionBoardContextTask> source)
         {
-            var immediateMode = ImediateMode;
+            var immediateMode = ImmediateMode;
             var deviceName = DeviceName;
             var deviceAddress = DeviceAddress;
             return source.ConfigureAndLatchDevice(context =>
@@ -53,7 +73,7 @@ namespace OpenEphys.AcquisitionBoard
     }
 
     /// <summary>
-    /// Specifies the state of the acquisition board's digital input pins.
+    /// Specifies the state of the acquisition board's digital (TTL) input or output pins.
     /// </summary>
     [Flags]
     public enum TTLState : ushort

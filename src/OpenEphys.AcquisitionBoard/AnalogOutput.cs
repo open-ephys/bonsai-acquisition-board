@@ -10,13 +10,17 @@ namespace OpenEphys.AcquisitionBoard
     /// <summary>
     /// Sends analog output data to the acquisition board's DAC outputs.
     /// </summary>
+    /// <remarks>
+    /// This data IO operator must be linked to an appropriate configuration, such as a <see
+    /// cref="ConfigureAnalogOutput"/>, using a shared <c>DeviceName</c>.
+    /// </remarks>
     [Description("Sends analog output data to the acquisition board's DAC outputs.")]
     public class AnalogOutput : Sink<Mat>
     {
-        /// <inheritdoc cref = "SingleDeviceFactory.DeviceName"/>
+        /// <inheritdoc cref = "SingleDeviceFactory{TContext}.DeviceName"/>
         [TypeConverter(typeof(AnalogOut.NameConverter))]
-        [Description(SingleDeviceFactory.DeviceNameDescription)]
-        [Category(DeviceFactory.ConfigurationCategory)]
+        [Description(DeviceFactoryStrings.DeviceNameDescription)]
+        [Category(DeviceFactoryStrings.ConfigurationCategory)]
         public string DeviceName { get; set; }
 
         /// <summary>
@@ -32,15 +36,15 @@ namespace OpenEphys.AcquisitionBoard
         /// the DACs.
         /// </remarks>
         [Description("The data type used to represent analog samples.")]
-        [Category(DeviceFactory.ConfigurationCategory)]
+        [Category(DeviceFactoryStrings.ConfigurationCategory)]
         public AnalogIODataType DataType { get; set; } = AnalogIODataType.U16;
 
         /// <summary>
         /// Send a matrix of samples to all enabled analog outputs.
         /// </summary>
         /// <remarks>
-        /// If a matrix contains multiple samples, they will be written to hardware as quickly as
-        /// communication allows. The data within each input matrix must have <see cref="Depth.U16"/> when
+        /// Data output is performed at the sample rate of the Rhythm device.
+        /// The data within each input matrix must have <see cref="Depth.U16"/> when
         /// <c>DataType</c> is set to <see cref="AnalogIODataType.U16"/>, <see cref="Depth.S16"/> when
         /// <c>DataType</c> is set to <see cref="AnalogIODataType.S16"/>, or <see cref="Depth.F32"/>
         /// when <c>DataType</c> is set to <see cref="AnalogIODataType.Volts"/>.

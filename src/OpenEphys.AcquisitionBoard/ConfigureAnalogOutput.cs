@@ -1,16 +1,37 @@
 ﻿using System;
+using System.ComponentModel;
 using OpenEphys.Onix1;
 
 namespace OpenEphys.AcquisitionBoard
 {
-    internal class ConfigureAnalogOutput : SingleDeviceFactory
+    /// <summary>
+    /// Configures the analog output device of the acquisition board.
+    /// </summary>
+    /// <remarks>
+    /// This configuration operator can be linked to a data IO operator, such as <see cref="AnalogOutput"/>,
+    /// using a shared <c>DeviceName</c>.
+    /// </remarks>
+    [Description("Configures the analog output device of the acquisition board.")]
+    public class ConfigureAnalogOutput : SingleDeviceFactory<AcquisitionBoardContextTask>
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConfigureAnalogOutput"/> class.
+        /// </summary>
         public ConfigureAnalogOutput()
             : base(typeof(AnalogOut))
         {
         }
 
-        public override IObservable<TContext> Process<TContext>(IObservable<TContext> source)
+        /// <summary>
+        /// Configures the analog output device.
+        /// </summary>
+        /// <remarks>
+        /// This will schedule configuration actions to be applied by a <see cref="StartAcquisition"/> instance
+        /// prior to data acquisition.
+        /// </remarks>
+        /// <param name="source">A sequence of <see cref="AcquisitionBoardContextTask"/> instances that holds configuration actions.</param>
+        /// <returns>The original sequence modified by adding additional configuration actions required to configure the analog output device.</returns>
+        public override IObservable<AcquisitionBoardContextTask> Process(IObservable<AcquisitionBoardContextTask> source)
         {
             var deviceName = DeviceName;
             var deviceAddress = DeviceAddress;

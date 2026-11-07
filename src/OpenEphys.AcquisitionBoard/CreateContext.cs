@@ -1,0 +1,97 @@
+﻿using System;
+using System.ComponentModel;
+using System.Reactive.Linq;
+using Bonsai;
+using OpenEphys.Onix1;
+
+namespace OpenEphys.AcquisitionBoard
+{
+    /// <summary>
+    /// Creates a <see cref="AcquisitionBoardContextTask"/> that orchestrates data acquisition for an
+    /// Open Ephys Acquisition Board.
+    /// </summary>
+    /// <remarks>
+    /// The Acquisition Board is built on top of the <see href="https://open-ephys.github.io/ONI/">Open Neuro
+    /// Interface (ONI)</see> hardware specification and API. One of ONI's requirements is the creation of a
+    /// "context" that holds information needed for communication between a host computer and ONI-compliant
+    /// hardware. <see cref="CreateContext"/> creates this required ONI context for a single Acquisition Board.
+    /// The Acquisition Board always communicates with the host using the "ft600" device driver, and the board
+    /// that the context serves is uniquely identified within a host computer by the <see cref="Index"/>,
+    /// which is translated by the driver into a physical USB interface within the host computer.
+    /// </remarks>
+    [Description("Creates a ContextTask to orchestrate a single Acquisition Board using the specified host interconnect.")]
+    [Combinator(MethodName = nameof(Generate))]
+    [WorkflowElementCategory(ElementCategory.Source)]
+    public class CreateContext
+    {
+        /// <summary>
+        /// Gets or sets the index of the host interconnect between the Acquisition Board and host computer.
+        /// </summary>
+        /// <remarks>
+        /// For instance, 0 could correspond to a particular USB port as enumerated by the operating system
+        /// and translated by the "ft600" <see href="https://open-ephys.github.io/ONI/">ONI</see> Device
+        /// Driver Translator. A value of -1 will attempt to open the default index and is useful if there is
+        /// only a single Acquisition Board connected to the host computer.
+        /// </remarks>
+        [Description("The index of the host interconnect between the Acquisition Board and host computer.")]
+        [Category(DeviceFactoryStrings.ConfigurationCategory)]
+        public int Index { get; set; } = AcquisitionBoardContextTask.DefaultIndex;
+
+        /// <summary>
+        /// Sets the hardware validation level of the <see cref="ContextTask"/>.
+        /// </summary>
+        /// <remarks>
+        /// Downstream configuration operators may validate the hardware they configure before allowing
+        /// acquisition to proceed. This property controls how failures of those checks are treated, making it
+        /// possible to relax them for debugging or prototyping.
+        /// <para>
+        /// Relaxing the validation level does not change what data is acquired, only whether unmet preconditions
+        /// are treated as fatal. Data acquired under a relaxed strictness therefore cannot be assumed to be
+        /// correct.
+        /// </para>
+        /// <para>
+        /// A <see cref="ValidationLevel.Permissive"/> setting is never saved: it is intended to be a
+        /// deliberate, per-session choice rather than something a saved workflow can silently carry forward,
+        /// so a workflow always reopens with validation at least at its <see cref="ValidationLevel.Normal"/>
+        /// default.
+        /// </para>
+        /// </remarks>
+        [Description("Specifies how strictly hardware validation checks are enforced.")]
+        [Category(DeviceFactoryStrings.ConfigurationCategory)]
+        public ValidationLevel ValidationLevel { get; set; } = ValidationLevel.Normal;
+
+        /// <summary>
+        /// Prevents a <see cref="ValidationLevel.Permissive"/> setting from being saved.
+        /// </summary>
+        /// <returns>False if <see cref="ValidationLevel"/> is <see cref="ValidationLevel.Permissive"/>, true otherwise.</returns>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public bool ShouldSerializeValidationLevel() => ValidationLevel != ValidationLevel.Permissive;
+
+        /// <summary>
+        /// Generates a sequence that creates a new <see cref="AcquisitionBoardContextTask"/> object.
+        /// </summary>
+        /// <returns>
+        /// A sequence containing a single instance of the <see cref="AcquisitionBoardContextTask"/> class.
+        /// Cancelling the sequence will dispose of the created context.
+        /// </returns>
+        public IObservable<AcquisitionBoardContextTask> Generate()
+        {
+            return Observable.Create<AcquisitionBoardContextTask>(observer =>
+            {
+                var index = Index;
+                var validationLevel = ValidationLevel;
+                var context = new AcquisitionBoardContextTask(index, validationLevel);
+                try
+                {
+                    observer.OnNext(context);
+                    return context;
+                }
+                catch
+                {
+                    context.Dispose();
+                    throw;
+                }
+            });
+        }
+    }
+}

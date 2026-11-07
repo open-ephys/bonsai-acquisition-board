@@ -8,27 +8,33 @@ using OpenEphys.Onix1;
 namespace OpenEphys.AcquisitionBoard
 {
     /// <summary>
-    /// Produces a sequence of Harp clock synchronization signals
-    /// produced alongside the acquisition data from the Rhythm device
+    /// Produces a sequence of <see cref="HarpRhythmDataFrame"/> objects, each containing a Harp clock
+    /// synchronization signal and the corresponding Rhythm device sample count.
     /// </summary>
     /// <remarks>
-    /// Only produces data when a Harp device is connected to the Acquisition Board.
+    /// <para>
+    /// This data IO operator must be linked to an appropriate configuration, such as a <see
+    /// cref="ConfigureHarpRhythm"/>, using a shared <c>DeviceName</c>.
+    /// </para>
+    /// <para>
+    /// Harp devices periodically broadcast the current Harp time, in seconds, through their clock
+    /// synchronization output. When such a device is connected to the acquisition board, a frame is
+    /// produced for each received Harp second, which can be used to align data from the acquisition board
+    /// with data from Harp devices. No data is produced if no Harp device is connected.
+    /// </para>
     /// </remarks>
-    [Description("Produces a sequence of Harp clock synchronization signals produced" +
-        " alongside the acquisition data from the Rhythm device only when a Harp device is connected" +
-        " to the Acquisition Board")]
+    [Description("Produces a sequence of HarpRhythmDataFrame objects, each containing a Harp clock synchronization signal and the corresponding Rhythm device sample count.")]
     public class HarpRhythmData : Source<HarpRhythmDataFrame>
     {
-        /// <inheritdoc cref = "SingleDeviceFactory.DeviceName"/>
+        /// <inheritdoc cref = "SingleDeviceFactory{TContext}.DeviceName"/>
         [TypeConverter(typeof(HarpRhythm.NameConverter))]
-        [Description(SingleDeviceFactory.DeviceNameDescription)]
-        [Category(DeviceFactory.ConfigurationCategory)]
+        [Description(DeviceFactoryStrings.DeviceNameDescription)]
+        [Category(DeviceFactoryStrings.ConfigurationCategory)]
         public string DeviceName { get; set; }
 
         /// <summary>
-        /// Generates a sequence of <see cref="HarpRhythmDataFrame"/> objects containing the
-        /// Harp clock synchronization signals produced alongside the Rhythm device
-        /// sample counter on the moment of each Harp second
+        /// Generates a sequence of <see cref="HarpRhythmDataFrame"/> objects, each of which contains the
+        /// Rhythm device sample count at the moment a Harp second was received.
         /// </summary>
         /// <returns>A sequence of <see cref="HarpRhythmDataFrame"/> objects.</returns>
         public override IObservable<HarpRhythmDataFrame> Generate()

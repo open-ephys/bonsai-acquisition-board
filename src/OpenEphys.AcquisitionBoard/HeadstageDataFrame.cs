@@ -5,7 +5,7 @@ using OpenEphys.Onix1;
 namespace OpenEphys.AcquisitionBoard
 {
     /// <summary>
-    /// Represents a data frame produced by an acquisition board headstage collection.
+    /// Buffered data from the amplifier chips connected to the acquisition board headstage ports.
     /// </summary>
     [ExpectedSampleRate(30000)]
     public class HeadstageDataFrame : BufferedDataFrame
@@ -13,11 +13,11 @@ namespace OpenEphys.AcquisitionBoard
         /// <summary>
         /// Initializes a new instance of the <see cref="HeadstageDataFrame"/> class.
         /// </summary>
-        /// <param name="clock">The clock values for the data frame.</param>
-        /// <param name="hubClock">The hub clock values for the data frame.</param>
-        /// <param name="sampleCount">The frame count values for the data frame.</param>
-        /// <param name="amplifierData">The amplifier data matrix.</param>
-        /// <param name="auxData">The auxiliary data matrix.</param>
+        /// <param name="clock">An array of <see cref="DataFrame.Clock"/> values.</param>
+        /// <param name="hubClock">An array of hub clock counter values.</param>
+        /// <param name="sampleCount">An array of Rhythm device sample counter values.</param>
+        /// <param name="amplifierData">An array of multi-channel amplifier data.</param>
+        /// <param name="auxData">An array of multi-channel auxiliary data.</param>
         public HeadstageDataFrame(ulong[] clock, ulong[] hubClock, uint[] sampleCount, Mat amplifierData, Mat auxData)
             : base(clock, hubClock)
         {
@@ -25,18 +25,34 @@ namespace OpenEphys.AcquisitionBoard
             AuxData = auxData;
             SampleCount = sampleCount;
         }
+
         /// <summary>
-        /// Gets the amplifier data matrix for the data frame.
+        /// Gets the buffered amplifier data array.
         /// </summary>
+        /// <remarks>
+        /// Each row corresponds to an amplifier channel and each column to a sample. Channels of all selected
+        /// chips are concatenated in port order. Samples are represented as unsigned, offset binary encoded
+        /// 16-bit integers.
+        /// </remarks>
         public Mat AmplifierData { get; }
+
         /// <summary>
-        /// Gets the auxiliary data matrix for the data frame.
+        /// Gets the buffered auxiliary data array.
         /// </summary>
+        /// <remarks>
+        /// Each selected chip contributes three rows, one per auxiliary input, and each column corresponds to
+        /// a sample. Auxiliary inputs are sampled at one quarter of the amplifier sample rate, so this array
+        /// has one quarter of the columns of <see cref="AmplifierData"/>.
+        /// </remarks>
         public Mat AuxData { get; }
 
         /// <summary>
-        /// Gets the sample count values for the data frame.
+        /// Gets the buffered array of Rhythm device sample counter values.
         /// </summary>
+        /// <remarks>
+        /// This counter can be used to align these data with those from other Rhythm device data sources,
+        /// such as <see cref="ExternalDataFrame"/> or <see cref="HarpRhythmDataFrame"/>.
+        /// </remarks>
         public uint[] SampleCount { get; }
     }
 

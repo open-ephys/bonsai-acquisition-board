@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Bonsai;
 using OpenEphys.Onix1;
@@ -9,8 +10,31 @@ using Rhythm.Net;
 
 namespace OpenEphys.AcquisitionBoard
 {
-    internal class ConfigureRhythmDevice : AcquisitionBoardSingleDeviceFactory
+    /// <summary>
+    /// Configures the Rhythm device of the acquisition board.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The Rhythm device controls the Intan RHD2000-series amplifier chips on the headstages connected to the
+    /// acquisition board ports, as well as the analog and digital inputs of the board, which are sampled
+    /// synchronously with the amplifier data.
+    /// </para>
+    /// <para>
+    /// During configuration, the connected amplifier chips are detected and the optimal cable delay for each
+    /// port is computed automatically, after which an ADC calibration is performed on all chips.
+    /// </para>
+    /// <para>
+    /// This configuration operator can be linked to data IO operators, such as <see cref="HeadstageData"/>
+    /// and <see cref="ExternalData"/>, using a shared <c>DeviceName</c>.
+    /// </para>
+    /// </remarks>
+    [Description("Configures the Rhythm device of the acquisition board.")]
+    public class ConfigureRhythmDevice : SingleDeviceFactory<AcquisitionBoardContextTask>
     {
+        const string PortsCategory = "Port Configuration";
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConfigureRhythmDevice"/> class.
+        /// </summary>
         public ConfigureRhythmDevice() :
             base(typeof(RhythmDevice))
         {
@@ -27,7 +51,7 @@ namespace OpenEphys.AcquisitionBoard
         /// </summary>
         /// <value><c>true</c> if the LEDs are enabled; otherwise, <c>false</c>.</value>
         [Category(AcquisitionCategory)]
-        [Description("Board LED status")]
+        [Description("Specifies whether the on-board LEDs are enabled.")]
         public bool BoardLeds
         {
             get
@@ -41,8 +65,8 @@ namespace OpenEphys.AcquisitionBoard
         }
 
         /// <summary>
-        /// Gets or sets the clock divider for the sampel clock output
-        /// of the acquisition board
+        /// Gets or sets the clock divider for the sample clock output
+        /// of the acquisition board.
         /// </summary>
         [Category(AcquisitionCategory)]
         [Description("Clock divider for the sample clock output of the acquisition board.")]
@@ -62,18 +86,6 @@ namespace OpenEphys.AcquisitionBoard
                 clockDivider.OnNext(value - 1);
             }
         }
-
-        /// <summary>
-        /// Gets or sets the index of the board to open.
-        /// </summary>
-        /// <value>
-        /// An integer representing the target board index, ranging from -1 to 100.
-        /// Set to -1 to automatically open the first available board.
-        /// </value>
-        [Category(ConfigurationCategory)]
-        [Range(-1, 100)]
-        [Description("The index of the board to open (-1 to open the first available board).")]
-        public int BoardIndex { get; set; } = -1;
 
         /// <summary>
         /// Gets or sets the per-channel sampling rate of the amplifier.
@@ -129,7 +141,7 @@ namespace OpenEphys.AcquisitionBoard
         /// <remarks>
         /// This property determines the number of samples that are collected
         /// before data is propagated.
-        /// It is a multiple of 4 to be able to accomodate
+        /// It is a multiple of 4 to be able to accommodate
         /// the aux data which is sampled at fs/4.
         /// </remarks>
         [Description("Number of samples that are collected before data is propagated.")]
@@ -140,17 +152,141 @@ namespace OpenEphys.AcquisitionBoard
             set => bufferSize = 4 * ((value + 3) / 4);
         }
 
+        /// <summary>
+        /// Gets or sets the chip identifier connected to port A1.
+        /// </summary>
+        /// <remarks>Use <see langword="null"/> when no chip is connected to port A1.</remarks>
+        [Category(PortsCategory)]
+        [Description("The chip connected to port A1.")]
+        public Rhd2000ChipId? PortA1Chip { get; set; } = null;
+
+        /// <summary>
+        /// Gets or sets the chip identifier connected to port A2.
+        /// </summary>
+        /// <remarks>
+        /// Use <see langword="null"/> when no chip is connected to port A2.
+        /// </remarks>
+        [Category(PortsCategory)]
+        [Description("The chip connected to port A2.")]
+        public Rhd2000ChipId? PortA2Chip { get; set; } = null;
+
+        /// <summary>
+        /// Gets or sets the SPI cable delay for port A.
+        /// </summary>
+        /// <remarks>
+        /// The SPI cable delay for port A in clock cycles.
+        /// </remarks>
+        [Category(PortsCategory)]
+        [Description("The SPI cable delay for port A.")]
+        public uint PortACableDelay { get; set; } = 0;
+
+
+
+        /// <summary>
+        /// Gets or sets the chip identifier connected to port B1.
+        /// </summary>
+        /// <remarks>Use <see langword="null"/> when no chip is connected to port B1.</remarks>
+        [Category(PortsCategory)]
+        [Description("The chip connected to port B1.")]
+        public Rhd2000ChipId? PortB1Chip { get; set; } = null;
+
+        /// <summary>
+        /// Gets or sets the chip identifier connected to port B2.
+        /// </summary>
+        /// <remarks>
+        /// Use <see langword="null"/> when no chip is connected to port B2.
+        /// </remarks>
+        [Category(PortsCategory)]
+        [Description("The chip connected to port B2.")]
+        public Rhd2000ChipId? PortB2Chip { get; set; } = null;
+
+        /// <summary>
+        /// Gets or sets the SPI cable delay for port B.
+        /// </summary>
+        /// <remarks>
+        /// The SPI cable delay for port B in clock cycles.
+        /// </remarks>
+        [Category(PortsCategory)]
+        [Description("The SPI cable delay for port B.")]
+        public uint PortBCableDelay { get; set; } = 0;
+
+        /// <summary>
+        /// Gets or sets the chip identifier connected to port C1.
+        /// </summary>
+        /// <remarks>Use <see langword="null"/> when no chip is connected to port C1.</remarks>
+        [Category(PortsCategory)]
+        [Description("The chip connected to port C1.")]
+        public Rhd2000ChipId? PortC1Chip { get; set; } = null;
+
+        /// <summary>
+        /// Gets or sets the chip identifier connected to port C2.
+        /// </summary>
+        /// <remarks>
+        /// Use <see langword="null"/> when no chip is connected to port C2.
+        /// </remarks>
+        [Category(PortsCategory)]
+        [Description("The chip connected to port C2.")]
+        public Rhd2000ChipId? PortC2Chip { get; set; } = null;
+
+        /// <summary>
+        /// Gets or sets the SPI cable delay for port C.
+        /// </summary>
+        /// <remarks>
+        /// The SPI cable delay for port C in clock cycles.
+        /// </remarks>
+        [Category(PortsCategory)]
+        [Description("The SPI cable delay for port C.")]
+        public uint PortCCableDelay { get; set; } = 0;
+
+        /// <summary>
+        /// Gets or sets the chip identifier connected to port D1.
+        /// </summary>
+        /// <remarks>Use <see langword="null"/> when no chip is connected to port D1.</remarks>
+        [Category(PortsCategory)]
+        [Description("The chip connected to port D1.")]
+        public Rhd2000ChipId? PortD1Chip { get; set; } = null;
+
+        /// <summary>
+        /// Gets or sets the chip identifier connected to port D2.
+        /// </summary>
+        /// <remarks>
+        /// Use <see langword="null"/> when no chip is connected to port D2.
+        /// </remarks>
+        [Category(PortsCategory)]
+        [Description("The chip connected to port D2.")]
+        public Rhd2000ChipId? PortD2Chip { get; set; } = null;
+
+        /// <summary>
+        /// Gets or sets the SPI cable delay for port D.
+        /// </summary>
+        /// <remarks>
+        /// The SPI cable delay for port D in clock cycles.
+        /// </remarks>
+        [Category(PortsCategory)]
+        [Description("The SPI cable delay for port D.")]
+        public uint PortDCableDelay { get; set; } = 0;
 
 
         int bufferSize = 32;
 
 
+        /// <summary>
+        /// Configures the Rhythm device.
+        /// </summary>
+        /// <remarks>
+        /// This will schedule configuration actions to be applied by a <see cref="StartAcquisition"/> instance
+        /// prior to data acquisition.
+        /// </remarks>
+        /// <param name="source">A sequence of <see cref="AcquisitionBoardContextTask"/> instances that holds configuration actions.</param>
+        /// <returns>The original sequence modified by adding additional configuration actions required to configure the Rhythm device.</returns>
         public override IObservable<AcquisitionBoardContextTask> Process(IObservable<AcquisitionBoardContextTask> source)
         {
             RhythmBoard board = null;
             var deviceAddress = DeviceAddress;
             var deviceName = DeviceName;
             var buffersize = BufferSize;
+            var chipIds = new Rhd2000ChipId?[8] { PortA1Chip, PortA2Chip, PortB1Chip, PortB2Chip, PortC1Chip, PortC2Chip, PortD1Chip, PortD2Chip };
+            var portDelays = new uint[4] { PortACableDelay, PortBCableDelay, PortCCableDelay, PortDCableDelay };
             return source
                 .ConfigureAndLatchDevice(context =>
                 {
@@ -164,8 +300,6 @@ namespace OpenEphys.AcquisitionBoard
                     // NB : We need the reset so the initialization commands
                     // are into effect before the scan
                     context.Reset();
-                    Console.WriteLine($"Connected streams : {board.GetNumEnabledDataStreams()}");
-                    var chipIds = ScanConnectedAmplifiers(board, context, deviceAddress);
                     var deviceInfo = new RhythmDeviceInfo(device, DeviceType, chipIds, buffersize);
                     return new CompositeDisposable(
                         ledSubscription,
@@ -174,11 +308,48 @@ namespace OpenEphys.AcquisitionBoard
                         );
                 }).ConfigureDirectDevice(context =>
                 {
-                    RunCalibration(board, context);
-                    board.EnableExternalFastSettle(ExternalFastSettleEnabled);
+                    SetCableDelays(board, portDelays);
                     board.SetContinuousRunMode(true);
                     return Disposable.Empty;
+                }).ConfigureCalibration(deviceAddress, true,
+                frames => ReadChipIds(frames, chipIds),
+                context =>
+                {
+                    board.SelectAuxCommandBank(BoardPort.PortA, AuxCmdSlot.AuxCmd3, 0);
+                    board.SelectAuxCommandBank(BoardPort.PortB, AuxCmdSlot.AuxCmd3, 0);
+                    board.SelectAuxCommandBank(BoardPort.PortC, AuxCmdSlot.AuxCmd3, 0);
+                    board.SelectAuxCommandBank(BoardPort.PortD, AuxCmdSlot.AuxCmd3, 0);
+
+                    return Disposable.Create(() =>
+                    {
+                        UpdateRegisterConfiguration(board, false);
+                        board.EnableExternalFastSettle(ExternalFastSettleEnabled);
+                        EnableConnectedAmplifiers(board, chipIds);
+                    });
                 });
+        }
+
+        static IObservable<oni.Frame> ReadChipIds(IObservable<oni.Frame> frames, Rhd2000ChipId?[] chipIds)
+        {
+            const int adcChannels = 35;
+            var data = new ushort[RhythmBoard.MAX_DATA_STREAMS, adcChannels, initLen];
+            var frameIndex = 0;
+            return frames
+                .Take((int)initLen)
+                .Do(frame =>
+                {
+                    var frameData = frame.GetData<ushort>();
+                    for (int result = 0; result < adcChannels; result++)
+                    {
+                        for (int stream = 0; stream < RhythmBoard.MAX_DATA_STREAMS; stream++)
+                        {
+                            data[stream, result, frameIndex] = frameData[10 + result * RhythmBoard.MAX_DATA_STREAMS + stream];
+                        }
+                    }
+                    frameIndex++;
+                },
+                // NB: an exception here terminates this sequence with an error, which is forwarded by ConfigureCalibration
+                () => VerifyChipIds(data, chipIds));
         }
 
 
@@ -258,34 +429,6 @@ namespace OpenEphys.AcquisitionBoard
             board.SelectAuxCommandBank(BoardPort.PortD, AuxCmdSlot.AuxCmd2, 0);
         }
 
-        static void RunCalibration(RhythmBoard board, AcquisitionBoardContextTask context)
-        {
-            // Select RAM Bank 0 for AuxCmd3 initially, so the ADC is calibrated.
-            board.SelectAuxCommandBank(BoardPort.PortA, AuxCmdSlot.AuxCmd3, 0);
-            board.SelectAuxCommandBank(BoardPort.PortB, AuxCmdSlot.AuxCmd3, 0);
-            board.SelectAuxCommandBank(BoardPort.PortC, AuxCmdSlot.AuxCmd3, 0);
-            board.SelectAuxCommandBank(BoardPort.PortD, AuxCmdSlot.AuxCmd3, 0);
-
-            // Since our longest command sequence is 60 commands, we run the SPI
-            // interface for 60 samples 
-            board.SetMaxTimeStep(initLen);
-            board.SetContinuousRunMode(false);
-
-            // Run ADC calibration command sequence
-            using (var acquisitionScope = context.StartTemporaryAcquisition())
-            {
-                // Ignore frames until the command sequence has completed.
-                // the command sequence might be smaller than the BlockReadSize
-                // so we rely on the buffer and just discard all frames until
-                // the Rhythm state machine stops running.
-                while (board.IsRunning()) ;
-            }
-
-            // Now that ADC calibration has been performed, we switch to the command sequence
-            // that does not execute ADC calibration.
-            UpdateRegisterConfiguration(board, false);
-        }
-
         static void UpdateRegisterConfiguration(RhythmBoard board, bool fastSettle)
         {
             board.SelectAuxCommandBank(BoardPort.PortA, AuxCmdSlot.AuxCmd3, fastSettle ? 2 : 1);
@@ -294,115 +437,17 @@ namespace OpenEphys.AcquisitionBoard
             board.SelectAuxCommandBank(BoardPort.PortD, AuxCmdSlot.AuxCmd3, fastSettle ? 2 : 1);
         }
 
-        static RhythmDevice.RhdChipId[] ScanConnectedAmplifiers(RhythmBoard board, AcquisitionBoardContextTask context, uint deviceAddress)
+        static void EnableConnectedAmplifiers(RhythmBoard board, Rhd2000ChipId?[] chipIds)
         {
-
-            // Select RAM Bank 0 for AuxCmd3
-            board.SelectAuxCommandBank(BoardPort.PortA, AuxCmdSlot.AuxCmd3, 0);
-            board.SelectAuxCommandBank(BoardPort.PortB, AuxCmdSlot.AuxCmd3, 0);
-            board.SelectAuxCommandBank(BoardPort.PortC, AuxCmdSlot.AuxCmd3, 0);
-            board.SelectAuxCommandBank(BoardPort.PortD, AuxCmdSlot.AuxCmd3, 0);
-
-            //We run this for long enough to get enough buffers in the
-            board.SetMaxTimeStep(128 * initLen);
-            board.SetContinuousRunMode(false);
-
-            // Run SPI command sequence at all 16 possible FPGA MISO delay settings
-            // to find optimum delay for each SPI interface cable.
-            var maxNumChips = 8;
-            var chipId = new RhythmDevice.RhdChipId[maxNumChips];
-            var optimumDelays = new int[maxNumChips];
-            var secondDelays = new int[maxNumChips];
-            var goodDelayCounts = new int[maxNumChips];
-            for (int i = 0; i < optimumDelays.Length; i++)
-            {
-                optimumDelays[i] = -1;
-                secondDelays[i] = -1;
-                goodDelayCounts[i] = 0;
-            }
-
-            for (int delay = 0; delay < 16; delay++)
-            {
-                Console.WriteLine("Testing MISO delay setting {0}...", delay);
-                board.SetCableDelay(BoardPort.PortA, delay);
-                board.SetCableDelay(BoardPort.PortB, delay);
-                board.SetCableDelay(BoardPort.PortC, delay);
-                board.SetCableDelay(BoardPort.PortD, delay);
-
-                const int adcChannels = 35;
-                ushort[,,] data = new ushort[RhythmBoard.MAX_DATA_STREAMS, adcChannels, initLen];
-                // Run SPI command sequence
-                using (var acquisitionScope = context.StartTemporaryAcquisition(ReadSize))
-                {
-                    for (int frameIndex = 0; frameIndex < initLen; frameIndex++)
-                    {
-                        acquisitionScope.ProcessNextFrame(frame =>
-                        {
-                            var frameData = frame.GetData<ushort>();
-                            for (int result = 0; result < adcChannels; result++)
-                            {
-                                for (int stream = 0; stream < RhythmBoard.MAX_DATA_STREAMS; stream++)
-                                {
-                                    data[stream, result, frameIndex] = frameData[10 + result * RhythmBoard.MAX_DATA_STREAMS + stream];
-                                }
-                            }
-                        }, deviceAddress);
-                    }
-                }
-
-                // Read the Intan chip ID number from each RHD2000 chip found.
-                // Record delay settings that yield good communication with the chip.
-                for (int chipIdx = 0; chipIdx < chipId.Length; chipIdx++)
-                {
-                    var id = ReadDeviceId(data, chipIdx);
-                    if (id > 0)
-                    {
-                        chipId[chipIdx] = id;
-                        goodDelayCounts[chipIdx]++;
-                        switch (goodDelayCounts[chipIdx])
-                        {
-                            case 1: optimumDelays[chipIdx] = delay; break;
-                            case 2: secondDelays[chipIdx] = delay; break;
-                            case 3: optimumDelays[chipIdx] = secondDelays[chipIdx]; break;
-                        }
-                    }
-                }
-            }
-
-            // Now that we know which RHD2000 amplifier chips are plugged into each SPI port,
-            // add up the total number of amplifier channels on each port and calculate the number
-            // of data streams necessary to convey this data over the USB interface.
-            var numStreamsRequired = 0;
-            var rhd2216ChipPresent = false;
-            for (int chipIdx = 0; chipIdx < chipId.Length; ++chipIdx)
-            {
-                switch (chipId[chipIdx])
-                {
-                    case RhythmDevice.RhdChipId.Rhd2216:
-                        numStreamsRequired++;
-                        rhd2216ChipPresent = true;
-                        break;
-                    case RhythmDevice.RhdChipId.Rhd2132:
-                        numStreamsRequired++;
-                        break;
-                    case RhythmDevice.RhdChipId.Rhd2164:
-                        numStreamsRequired += 2;
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            // Reconfigure USB data streams in consecutive order to accommodate all connected chips.
             int activeStream = 0;
-            for (int chipIdx = 0; chipIdx < chipId.Length; ++chipIdx)
+            for (int chipIdx = 0; chipIdx < chipIds.Length; ++chipIdx)
             {
-                if (chipId[chipIdx] > 0)
+                var chipId = chipIds[chipIdx];
+                if (chipId.HasValue)
                 {
-                    Console.WriteLine("Found hardware device with chip ID {0} on SPI port {1}.", chipId[chipIdx], chipIdx);
                     board.EnableDataStream(activeStream, true);
                     board.SetDataSource(activeStream, (BoardDataSource)chipIdx);
-                    if (chipId[chipIdx] == RhythmDevice.RhdChipId.Rhd2164)
+                    if (chipId.Value == Rhd2000ChipId.Rhd2164)
                     {
                         board.EnableDataStream(activeStream + 1, true);
                         board.SetDataSource(activeStream + 1, (BoardDataSource)(chipIdx + BoardDataSource.PortA1Ddr));
@@ -410,28 +455,23 @@ namespace OpenEphys.AcquisitionBoard
                     }
                     else activeStream++;
                 }
-                else optimumDelays[chipIdx] = 0;
             }
 
-            // Now, disable data streams where we did not find chips present.
+            // Disable data streams where no chips are present.
             for (; activeStream < RhythmBoard.MAX_DATA_STREAMS; activeStream++)
             {
                 board.EnableDataStream(activeStream, false);
             }
-            // Set cable delay settings that yield good communication with each
-            // RHD2000 chip.
-            var optimumDelayA = Math.Max(optimumDelays[0], optimumDelays[1]);
-            var optimumDelayB = Math.Max(optimumDelays[2], optimumDelays[3]);
-            var optimumDelayC = Math.Max(optimumDelays[4], optimumDelays[5]);
-            var optimumDelayD = Math.Max(optimumDelays[6], optimumDelays[7]);
-            board.SetCableDelay(BoardPort.PortA, optimumDelayA);
-            board.SetCableDelay(BoardPort.PortB, optimumDelayB);
-            board.SetCableDelay(BoardPort.PortC, optimumDelayC);
-            board.SetCableDelay(BoardPort.PortD, optimumDelayD);
-            return chipId;
         }
 
-        static RhythmDevice.RhdChipId ReadDeviceId(ushort[,,] data, int stream)
+        static void SetCableDelays(RhythmBoard board, uint[] portDelays)
+        {
+            board.SetCableDelay(BoardPort.PortA, (int)portDelays[0]);
+            board.SetCableDelay(BoardPort.PortB, (int)portDelays[1]);
+            board.SetCableDelay(BoardPort.PortC, (int)portDelays[2]);
+            board.SetCableDelay(BoardPort.PortD, (int)portDelays[3]);
+        }
+        static Rhd2000ChipId? ReadDeviceId(ushort[,,] data, int stream)
         {
             // First, check ROM registers 32-36 to verify that they hold 'INTAN', and
             // the initial chip name ROM registers 24-26 that hold 'RHD'.
@@ -448,31 +488,47 @@ namespace OpenEphys.AcquisitionBoard
                 (char)data[stream, 2, 25] == 'H' &&
                 (char)data[stream, 2, 26] == 'D');
 
-            // If the SPI communication is bad, return -1.  Otherwise, return the Intan
-            // chip ID number stored in ROM regstier 63.
+            // If the SPI communication is bad, return null. Otherwise, return the Intan
+            // chip ID number stored in ROM register 63.
             if (!intanChipPresent)
             {
-                return RhythmDevice.RhdChipId.None;
+                return null;
             }
-            else
+
+            var chipId = (Rhd2000ChipId)data[stream, 2, 19]; // chip ID (Register 63)
+            if (!Enum.IsDefined(typeof(Rhd2000ChipId), chipId))
             {
-                RhythmDevice.RhdChipId chipId = (RhythmDevice.RhdChipId)data[stream, 2, 19]; // chip ID (Register 63)
-                if (chipId == RhythmDevice.RhdChipId.Rhd2164)
+                return null;
+            }
+
+            if (chipId == Rhd2000ChipId.Rhd2164)
+            {
+                var register59ValueA = data[stream, 2, 23];
+                var register59ValueB = data[stream + RhythmBoard.MAX_DATA_STREAMS / 2, 2, 28];
+                if (register59ValueA != RhythmDevice.REGISTER_59_MISO_A && register59ValueB != RhythmDevice.REGISTER_59_MISO_B)
                 {
-                    var register59ValueA = data[stream, 2, 23];
-                    var register59ValueB = data[stream + RhythmBoard.MAX_DATA_STREAMS / 2, 2, 28];
-                    if (register59ValueA != RhythmDevice.REGISTER_59_MISO_A && register59ValueB != RhythmDevice.REGISTER_59_MISO_B)
-                    {
-                        return RhythmDevice.RhdChipId.None; // Invalid MISO configuration for RHD2164
-                    }
+                    throw new InvalidOperationException($"Invalid MISO configuration for RHD2164 on data stream {stream}.");
                 }
-                return chipId;
+            }
+            return chipId;
+        }
+
+        static void VerifyChipIds(ushort[,,] data, Rhd2000ChipId?[] expected)
+        {
+            for (int chipIdx = 0; chipIdx < expected.Length; chipIdx++)
+            {
+                var id = ReadDeviceId(data, chipIdx);
+                if (id != expected[chipIdx])
+                {
+                    throw new InvalidOperationException(
+                        $"Detected chip ID on port slot {chipIdx} ({(id.HasValue ? id.Value.ToString() : "none")}) does not match the configured chip ({(expected[chipIdx].HasValue ? expected[chipIdx].Value.ToString() : "none")}).");
+                }
             }
         }
 
     }
 
-    public static class RhythmDevice
+    static class RhythmDevice
     {
         public const int ID = 65537;
         public const uint MinimumVersion = 1;
@@ -523,13 +579,6 @@ namespace OpenEphys.AcquisitionBoard
 
         internal const ulong MAGIC_NUMBER = 0xc691199927021942;
 
-        internal enum RhdChipId : int
-        {
-            None = 0,
-            Rhd2132 = 1,
-            Rhd2216 = 2,
-            Rhd2164 = 4
-        }
         internal const int REGISTER_59_MISO_A = 53;
         internal const int REGISTER_59_MISO_B = 58;
 
@@ -544,16 +593,35 @@ namespace OpenEphys.AcquisitionBoard
 
     class RhythmDeviceInfo : DeviceInfo
     {
-        public RhythmDeviceInfo(DeviceContext device, Type deviceType, RhythmDevice.RhdChipId[] chipIds, int bufferSize)
+        public RhythmDeviceInfo(DeviceContext device, Type deviceType, Rhd2000ChipId?[] chipIds, int bufferSize)
             : base(device, deviceType)
         {
             ChipIds = chipIds;
             BufferSize = bufferSize;
         }
 
-        public RhythmDevice.RhdChipId[] ChipIds { get; }
+        public Rhd2000ChipId?[] ChipIds { get; }
 
         public int BufferSize { get; }
+    }
+
+    /// <summary>
+    /// Identifies the RHD2000 chip and the value of the chip ID register.
+    /// </summary>
+    public enum Rhd2000ChipId
+    {
+        /// <summary>
+        /// Represents a RHD2132 chip, which has 32 single-channel amplifier channels.
+        /// </summary>
+        Rhd2132 = 1,
+        /// <summary>
+        /// Represents a RHD2216 chip, which has 16 dual-channel amplifier channels.
+        /// </summary>
+        Rhd2216 = 2,
+        /// <summary>
+        /// Represents a RHD2164 chip, which has 64 single-channel amplifier channels.
+        /// </summary>
+        Rhd2164 = 4
     }
 
 

@@ -10,16 +10,29 @@ using OpenEphys.Onix1;
 namespace OpenEphys.AcquisitionBoard
 {
     /// <summary>
-    /// Represents an operator that acquires external analog and digital data from the acquisition board.
+    /// Produces a sequence of <see cref="ExternalDataFrame"/> objects with data from the analog and
+    /// digital inputs of the acquisition board.
     /// </summary>
-    [Description("Acquires external analog and digital data from the acquisition board.")]
+    /// <remarks>
+    /// This data IO operator must be linked to an appropriate configuration, such as a <see
+    /// cref="ConfigureRhythmDevice"/>, using a shared <c>DeviceName</c>. The analog and digital inputs are
+    /// sampled synchronously with the headstage amplifier data, and the number of samples in each frame is
+    /// determined by <see cref="ConfigureRhythmDevice.BufferSize"/>.
+    /// </remarks>
+    [Description("Produces a sequence of ExternalDataFrame objects with data from the analog and digital inputs of the acquisition board.")]
     public class ExternalData : Source<ExternalDataFrame>
     {
-        /// <inheritdoc cref = "SingleDeviceFactory.DeviceName"/>
+        /// <inheritdoc cref = "SingleDeviceFactory{TContext}.DeviceName"/>
         [TypeConverter(typeof(RhythmDevice.NameConverter))]
-        [Description("The name of the acquisition board device to acquire data from.")]
+        [Description(DeviceFactoryStrings.DeviceNameDescription)]
+        [Category(DeviceFactoryStrings.ConfigurationCategory)]
         public string DeviceName { get; set; }
 
+        /// <summary>
+        /// Generates a sequence of <see cref="ExternalDataFrame"/> objects, each of which is a buffered set
+        /// of analog and digital input samples.
+        /// </summary>
+        /// <returns>A sequence of <see cref="ExternalDataFrame"/> objects.</returns>
         public override IObservable<ExternalDataFrame> Generate()
         {
             return DeviceManager.GetDevice(DeviceName).SelectMany(
@@ -34,12 +47,9 @@ namespace OpenEphys.AcquisitionBoard
                         int activeStreams = 0;
                         foreach (var chipId in chipIds)
                         {
-                            try
+                            if (chipId.HasValue)
                             {
-                                activeStreams += HeadstageData.GetStreamsPerChip(chipId);
-                            }
-                            catch (InvalidEnumArgumentException ex)
-                            {
+                                activeStreams += HeadstageData.GetStreamsPerChip(chipId.Value);
                             }
                         }
                         int adcOffset = 36 * activeStreams * sizeof(ushort);

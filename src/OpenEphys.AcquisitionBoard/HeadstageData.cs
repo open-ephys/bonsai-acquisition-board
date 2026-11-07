@@ -10,22 +10,43 @@ using OpenEphys.Onix1;
 namespace OpenEphys.AcquisitionBoard
 {
     /// <summary>
-    /// Produces a sequence of <see cref="HeadstageDataFrame"/> values from a specified acquisition board headstage port.
+    /// Produces a sequence of <see cref="HeadstageDataFrame"/> objects with data from the amplifier chips
+    /// connected to the acquisition board headstage ports.
     /// </summary>
-    [Description("Produces a sequence of AcquisitionBoardHeadstageDataFrame values from a specified acquisition board headstage port.")]
+    /// <remarks>
+    /// This data IO operator must be linked to an appropriate configuration, such as a <see
+    /// cref="ConfigureRhythmDevice"/>, using a shared <c>DeviceName</c>. The number of samples in each frame
+    /// is determined by <see cref="ConfigureRhythmDevice.BufferSize"/>.
+    /// </remarks>
+    [Description("Produces a sequence of HeadstageDataFrame objects with data from the amplifier chips connected to the acquisition board headstage ports.")]
     public class HeadstageData : Source<HeadstageDataFrame>
     {
-        /// <inheritdoc cref = "SingleDeviceFactory.DeviceName"/>
+        /// <inheritdoc cref = "SingleDeviceFactory{TContext}.DeviceName"/>
         [TypeConverter(typeof(RhythmDevice.NameConverter))]
-        [Description("The name of the acquisition board device to acquire data from.")]
+        [Description(DeviceFactoryStrings.DeviceNameDescription)]
+        [Category(DeviceFactoryStrings.ConfigurationCategory)]
         public string DeviceName { get; set; }
 
         /// <summary>
-        /// Gets or sets the headstage port to acquire data from.
+        /// Gets or sets the headstage ports to acquire data from.
         /// </summary>
+        /// <remarks>
+        /// Each headstage port (A to D) can hold up to two amplifier chips (e.g. <see
+        /// cref="HeadstagePort.PortA1"/> and <see cref="HeadstagePort.PortA2"/>) when in dual MISO mode, or a
+        /// single one when in MISO + I2C mode. Multiple ports can be combined, in which case the channels of
+        /// all selected chips are concatenated in port order. If <see cref="HeadstagePort.AllConnected"/> is
+        /// selected, data is acquired from every chip detected during configuration. Selecting a port with
+        /// no detected chip will result in an error.
+        /// </remarks>
         [Description("The headstage port or ports to acquire data from.")]
+        [Category(DeviceFactoryStrings.ConfigurationCategory)]
         public HeadstagePort Port { get; set; } = HeadstagePort.AllConnected;
 
+        /// <summary>
+        /// Generates a sequence of <see cref="HeadstageDataFrame"/> objects, each of which is a buffered set
+        /// of multichannel samples from the selected headstage ports.
+        /// </summary>
+        /// <returns>A sequence of <see cref="HeadstageDataFrame"/> objects.</returns>
         public override IObservable<HeadstageDataFrame> Generate()
         {
             return DeviceManager.GetDevice(DeviceName).SelectMany(
@@ -47,7 +68,7 @@ namespace OpenEphys.AcquisitionBoard
                             effectivePort &= ~HeadstagePort.AllConnected;
                             for (int i = 0; i < chipIds.Length; i++)
                             {
-                                if (chipIds[i] != RhythmDevice.RhdChipId.None)
+                                if (chipIds[i].HasValue)
                                 {
                                     effectivePort |= (HeadstagePort)(1 << i);
                                 }
@@ -65,7 +86,7 @@ namespace OpenEphys.AcquisitionBoard
                             var chipId = chipIds[i];
                             var currentPort = (HeadstagePort)(1 << i);
                             bool isPortSelected = effectivePort.HasFlag(currentPort);
-                            if (chipId == RhythmDevice.RhdChipId.None)
+                            if (!chipId.HasValue)
                             {
                                 if (isPortSelected)
                                 {
@@ -74,12 +95,12 @@ namespace OpenEphys.AcquisitionBoard
                                 continue;
                             }
 
-                            totalStreams += GetStreamsPerChip(chipId);
+                            totalStreams += GetStreamsPerChip(chipId.Value);
                             if (isPortSelected)
                             {
                                 totalAuxRows += 3;
                                 totalAuxIndexes += 1;
-                                totalAmplifierRows += GetNumChannelsPerChip(chipId);
+                                totalAmplifierRows += GetNumChannelsPerChip(chipId.Value);
                             }
                         }
                         int[] auxOffsets = new int[totalAuxIndexes];
@@ -93,12 +114,12 @@ namespace OpenEphys.AcquisitionBoard
                         {
                             var chipId = chipIds[i];
 
-                            if (chipId != RhythmDevice.RhdChipId.None)
+                            if (chipId.HasValue)
                             {
                                 var currentPort = (HeadstagePort)(1 << i);
                                 var isPortSelected = effectivePort.HasFlag(currentPort);
-                                var streamChannels = GetNumChannelsPerStream(chipId);
-                                var numStreams = GetStreamsPerChip(chipId);
+                                var streamChannels = GetNumChannelsPerStream(chipId.Value);
+                                var numStreams = GetStreamsPerChip(chipId.Value);
                                 if (isPortSelected)
                                 {
                                     // NB : Only AuxCmd2
@@ -178,35 +199,35 @@ namespace OpenEphys.AcquisitionBoard
             }
         }
 
-        internal static int GetStreamsPerChip(RhythmDevice.RhdChipId chipId)
+        internal static int GetStreamsPerChip(Rhd2000ChipId chipId)
         {
             return chipId switch
             {
-                RhythmDevice.RhdChipId.Rhd2164 => 2,
-                RhythmDevice.RhdChipId.Rhd2132 => 1,
-                RhythmDevice.RhdChipId.Rhd2216 => 1,
+                Rhd2000ChipId.Rhd2164 => 2,
+                Rhd2000ChipId.Rhd2132 => 1,
+                Rhd2000ChipId.Rhd2216 => 1,
                 _ => throw new InvalidEnumArgumentException("Invalid chip ID: " + chipId),
             };
         }
 
-        internal static int GetNumChannelsPerChip(RhythmDevice.RhdChipId chipId)
+        internal static int GetNumChannelsPerChip(Rhd2000ChipId chipId)
         {
             return chipId switch
             {
-                RhythmDevice.RhdChipId.Rhd2164 => 64,
-                RhythmDevice.RhdChipId.Rhd2132 => 32,
-                RhythmDevice.RhdChipId.Rhd2216 => 16,
+                Rhd2000ChipId.Rhd2164 => 64,
+                Rhd2000ChipId.Rhd2132 => 32,
+                Rhd2000ChipId.Rhd2216 => 16,
                 _ => throw new InvalidEnumArgumentException("Invalid chip ID: " + chipId),
             };
         }
 
-        internal static int GetNumChannelsPerStream(RhythmDevice.RhdChipId chipId)
+        internal static int GetNumChannelsPerStream(Rhd2000ChipId chipId)
         {
             return chipId switch
             {
-                RhythmDevice.RhdChipId.Rhd2164 => 32,
-                RhythmDevice.RhdChipId.Rhd2132 => 32,
-                RhythmDevice.RhdChipId.Rhd2216 => 16,
+                Rhd2000ChipId.Rhd2164 => 32,
+                Rhd2000ChipId.Rhd2132 => 32,
+                Rhd2000ChipId.Rhd2216 => 16,
                 _ => throw new InvalidEnumArgumentException("Invalid chip ID: " + chipId),
             };
         }
@@ -225,39 +246,39 @@ namespace OpenEphys.AcquisitionBoard
         /// <summary>
         /// Indicates that headstage port A1 is selected.
         /// </summary>
-        PortA1 = 1 << 0,
+        A1 = 1 << 0,
         /// <summary>
         /// Indicates that headstage port A2 is selected.
         /// </summary>
-        PortA2 = 1 << 1,
+        A2 = 1 << 1,
         /// <summary>
         /// Indicates that headstage port B1 is selected.
         /// </summary>
-        PortB1 = 1 << 2,
+        B1 = 1 << 2,
         /// <summary>
         /// Indicates that headstage port B2 is selected.
         /// </summary>
-        PortB2 = 1 << 3,
+        B2 = 1 << 3,
         /// <summary>
         /// Indicates that headstage port C1 is selected.
         /// </summary>
-        PortC1 = 1 << 4,
+        C1 = 1 << 4,
         /// <summary>
         /// Indicates that headstage port C2 is selected.
         /// </summary>
-        PortC2 = 1 << 5,
+        C2 = 1 << 5,
         /// <summary>
         /// Indicates that headstage port D1 is selected.
         /// </summary>
-        PortD1 = 1 << 6,
+        D1 = 1 << 6,
         /// <summary>
         /// Indicates that headstage port D2 is selected.
         /// </summary>
-        PortD2 = 1 << 7,
+        D2 = 1 << 7,
         /// <summary>
         /// Indicates that all headstage ports are selected.
         /// </summary>
-        All = PortA1 | PortA2 | PortB1 | PortB2 | PortC1 | PortC2 | PortD1 | PortD2,
+        All = A1 | A2 | B1 | B2 | C1 | C2 | D1 | D2,
         /// <summary>
         /// Indicates that all connected headstage ports are selected.
         /// </summary>

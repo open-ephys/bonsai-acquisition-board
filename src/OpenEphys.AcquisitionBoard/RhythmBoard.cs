@@ -375,7 +375,7 @@ namespace OpenEphys.AcquisitionBoard
             }
         }
 
-        // <summary>
+        /// <summary>
         /// Selects an auxiliary command slot (AuxCmd1, AuxCmd2, or AuxCmd3) and bank (0-15) for a particular SPI port.
         /// </summary>
         /// <param name="port">The SPI port on which the auxiliary command slot is selected.</param>
