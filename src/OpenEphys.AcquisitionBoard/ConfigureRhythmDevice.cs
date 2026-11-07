@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -297,10 +298,10 @@ namespace OpenEphys.AcquisitionBoard
                     var dividerSubscription = clockDivider.Subscribe(value => board.SetClockDivider(value));
                     UploadCommonCommands(board);
                     ChangeSampleRate(board);
-                    // NB : We need the reset so the initialization commands
-                    // are into effect before the scan
-                    context.Reset();
                     var deviceInfo = new RhythmDeviceInfo(device, DeviceType, chipIds, buffersize);
+                    SetCableDelays(board, portDelays);
+                    board.SetContinuousRunMode(true);
+                    EnableConnectedAmplifiers(board, chipIds);
                     return new CompositeDisposable(
                         ledSubscription,
                         dividerSubscription,
@@ -308,8 +309,7 @@ namespace OpenEphys.AcquisitionBoard
                         );
                 }).ConfigureDirectDevice(context =>
                 {
-                    SetCableDelays(board, portDelays);
-                    board.SetContinuousRunMode(true);
+
                     return Disposable.Empty;
                 }).ConfigureCalibration(deviceAddress, true,
                 frames => ReadChipIds(frames, chipIds),
@@ -324,7 +324,6 @@ namespace OpenEphys.AcquisitionBoard
                     {
                         UpdateRegisterConfiguration(board, false);
                         board.EnableExternalFastSettle(ExternalFastSettleEnabled);
-                        EnableConnectedAmplifiers(board, chipIds);
                     });
                 });
         }
@@ -332,7 +331,11 @@ namespace OpenEphys.AcquisitionBoard
         static IObservable<oni.Frame> ReadChipIds(IObservable<oni.Frame> frames, Rhd2000ChipId?[] chipIds)
         {
             const int adcChannels = 35;
-            var data = new ushort[RhythmBoard.MAX_DATA_STREAMS, adcChannels, initLen];
+            // NB: only the enabled streams are present in each frame (an RHD2164 uses two)
+            var numStreams = chipIds
+                .Where(c => c.HasValue)
+                .Sum(c => c.Value == Rhd2000ChipId.Rhd2164 ? 2 : 1);
+            var data = new ushort[numStreams, adcChannels, initLen];
             var frameIndex = 0;
             return frames
                 .Take((int)initLen)
@@ -341,9 +344,9 @@ namespace OpenEphys.AcquisitionBoard
                     var frameData = frame.GetData<ushort>();
                     for (int result = 0; result < adcChannels; result++)
                     {
-                        for (int stream = 0; stream < RhythmBoard.MAX_DATA_STREAMS; stream++)
+                        for (int stream = 0; stream < numStreams; stream++)
                         {
-                            data[stream, result, frameIndex] = frameData[10 + result * RhythmBoard.MAX_DATA_STREAMS + stream];
+                            data[stream, result, frameIndex] = frameData[10 + result * numStreams + stream];
                         }
                     }
                     frameIndex++;
@@ -504,7 +507,7 @@ namespace OpenEphys.AcquisitionBoard
             if (chipId == Rhd2000ChipId.Rhd2164)
             {
                 var register59ValueA = data[stream, 2, 23];
-                var register59ValueB = data[stream + RhythmBoard.MAX_DATA_STREAMS / 2, 2, 28];
+                var register59ValueB = data[stream + 1, 2, 28];
                 if (register59ValueA != RhythmDevice.REGISTER_59_MISO_A && register59ValueB != RhythmDevice.REGISTER_59_MISO_B)
                 {
                     throw new InvalidOperationException($"Invalid MISO configuration for RHD2164 on data stream {stream}.");
@@ -515,14 +518,24 @@ namespace OpenEphys.AcquisitionBoard
 
         static void VerifyChipIds(ushort[,,] data, Rhd2000ChipId?[] expected)
         {
+            // NB: only connected chips have an enabled stream, in the same order as expected.
+            // An RHD2164 uses two consecutive streams.
+            int stream = 0;
             for (int chipIdx = 0; chipIdx < expected.Length; chipIdx++)
             {
-                var id = ReadDeviceId(data, chipIdx);
-                if (id != expected[chipIdx])
+                var expectedId = expected[chipIdx];
+                if (!expectedId.HasValue)
+                {
+                    continue;
+                }
+
+                var id = ReadDeviceId(data, stream);
+                if (id != expectedId)
                 {
                     throw new InvalidOperationException(
-                        $"Detected chip ID on port slot {chipIdx} ({(id.HasValue ? id.Value.ToString() : "none")}) does not match the configured chip ({(expected[chipIdx].HasValue ? expected[chipIdx].Value.ToString() : "none")}).");
+                        $"Detected chip ID on port slot {chipIdx} ({(id.HasValue ? id.Value.ToString() : "none")}) does not match the configured chip ({expectedId.Value}).");
                 }
+                stream += expectedId.Value == Rhd2000ChipId.Rhd2164 ? 2 : 1;
             }
         }
 
