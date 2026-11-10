@@ -311,7 +311,7 @@ namespace OpenEphys.AcquisitionBoard
                 {
 
                     return Disposable.Empty;
-                }).ConfigureCalibration(deviceAddress, true,
+                }).ConfigurePreAcquisition(deviceAddress, true,
                 frames => ReadChipIds(frames, chipIds),
                 context =>
                 {
@@ -351,7 +351,7 @@ namespace OpenEphys.AcquisitionBoard
                     }
                     frameIndex++;
                 },
-                // NB: an exception here terminates this sequence with an error, which is forwarded by ConfigureCalibration
+                // NB: an exception here terminates this sequence with an error, which is forwarded by ConfigurePreAcquisition
                 () => VerifyChipIds(data, chipIds));
         }
 

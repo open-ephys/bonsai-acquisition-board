@@ -21,9 +21,12 @@ namespace OpenEphys.AcquisitionBoard
     /// </remarks>
     internal class ConfigurePortController : SingleDeviceFactory<AcquisitionBoardContextTask>
     {
-        public ConfigurePortController()
+        readonly int hubId;
+
+        public ConfigurePortController(int hubId)
             : base(typeof(PortController))
         {
+            this.hubId = hubId;
         }
 
         [Category(ConfigurationCategory)]
@@ -50,9 +53,18 @@ namespace OpenEphys.AcquisitionBoard
         public override IObservable<AcquisitionBoardContextTask> Process(IObservable<AcquisitionBoardContextTask> source)
         {
             var deviceAddress = DeviceAddress;
+            var hubId = this.hubId;
             var i2cEnable = new[] { PortAI2CEnabled, PortBI2CEnabled, PortCI2CEnabled, PortDI2CEnabled };
             return source.ConfigureAndLatchController(context =>
             {
+                var hub = context.GetHub(deviceAddress);
+                if (hub.HardwareID != hubId)
+                {
+                    throw new InvalidOperationException($"Invalid hub ID. The connected board is '{hub.Description}' " +
+                        $"(hub ID {hub.HardwareID}), but this configuration node requires hub ID {hubId}. Make sure " +
+                        $"the configuration node matches the connected board model.");
+                }
+
                 var version = GetGatewareVersion(context, deviceAddress);
                 if (version < new Version(2, 0, 0))
                 {
@@ -118,5 +130,8 @@ namespace OpenEphys.AcquisitionBoard
     {
         public const uint GATEWARE_VERSION = 2; // Read only. Bits 7-0: patch, 15-8: minor, 23-16: major, 31-24: release candidate tag
         public const uint ENABLE_I2C = 0x00001001; // Bit i sets the mode of port i (0 = A, 1 = B, ...): 0 = dual MISO, 1 = MISO + I2C
+
+        public const int GEN2_HUB_ID = 256; // Hub 0 hardware ID of the Gen2 Acquisition Board
+        public const int GEN3_HUB_ID = 258; // Hub 0 hardware ID of the Gen3 Acquisition Board
     }
 }
