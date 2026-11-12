@@ -504,16 +504,18 @@ namespace OpenEphys.AcquisitionBoard
                 return null;
             }
 
-            if (chipId == Rhd2000ChipId.Rhd2164)
-            {
-                var register59ValueA = data[stream, 2, 23];
-                var register59ValueB = data[stream + 1, 2, 28];
-                if (register59ValueA != RhythmDevice.REGISTER_59_MISO_A && register59ValueB != RhythmDevice.REGISTER_59_MISO_B)
-                {
-                    throw new InvalidOperationException($"Invalid MISO configuration for RHD2164 on data stream {stream}.");
-                }
-            }
             return chipId;
+        }
+
+        static void CheckRhd2164Miso(ushort[,,] data, int stream)
+        {
+            // NB: an RHD2164 uses two consecutive data streams; the second one holds its MISO B data
+            var register59ValueA = data[stream, 2, 23];
+            var register59ValueB = data[stream + 1, 2, 23];
+            if (register59ValueA != RhythmDevice.REGISTER_59_MISO_A || register59ValueB != RhythmDevice.REGISTER_59_MISO_B)
+            {
+                throw new InvalidOperationException($"Invalid MISO configuration for RHD2164 on data stream {stream}.");
+            }
         }
 
         static void VerifyChipIds(ushort[,,] data, Rhd2000ChipId?[] expected)
@@ -534,6 +536,13 @@ namespace OpenEphys.AcquisitionBoard
                 {
                     throw new InvalidOperationException(
                         $"Detected chip ID on port slot {chipIdx} ({(id.HasValue ? id.Value.ToString() : "none")}) does not match the configured chip ({expectedId.Value}).");
+                }
+
+                // NB: only after the chip matches the configuration, which guarantees that both of its streams
+                // were read: a mismatched RHD2164 has a single stream allocated
+                if (id == Rhd2000ChipId.Rhd2164)
+                {
+                    CheckRhd2164Miso(data, stream);
                 }
                 stream += expectedId.Value == Rhd2000ChipId.Rhd2164 ? 2 : 1;
             }

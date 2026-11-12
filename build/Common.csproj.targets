@@ -13,7 +13,7 @@
 
   <PropertyGroup>
     <!-- If you need multiple versions when making local builds, temporarily override DevVersion here or on the command line. -->
-    <DevVersion Condition="'$(DevVersion)' == ''">3</DevVersion>
+    <DevVersion Condition="'$(DevVersion)' == ''">4</DevVersion>
     <Version>$(VersionPrefix)-dev$(DevVersion)</Version>
 
     <Version Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(CiBuildVersion)</Version>
